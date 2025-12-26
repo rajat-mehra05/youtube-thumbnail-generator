@@ -63,7 +63,7 @@ export const Navbar = ({
           </span>
         </div>
       )}
-      <div className="container mx-auto px-4 flex h-16 items-center justify-between">
+      <div className="container flex h-16 items-center justify-between">
         <Link
           href={ROUTES.HOME}
           className="flex items-center gap-2 font-bold text-xl tracking-tight"
