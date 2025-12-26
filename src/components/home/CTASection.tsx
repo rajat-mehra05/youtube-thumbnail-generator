@@ -4,7 +4,7 @@ import { ROUTES } from '@/lib/constants';
 
 export const CTASection = () => (
   <section className="py-16 md:py-24">
-    <div className="container">
+    <div className="container mx-auto px-4">
       <div className="relative max-w-4xl mx-auto p-8 md:p-12 rounded-3xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div
