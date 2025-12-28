@@ -1,20 +1,16 @@
 import { toast } from 'sonner';
-import { extractErrorMessage } from '@/lib/utils/error-handling';
+import { extractErrorMessage, isError } from '@/lib/utils/error-handling';
+import type { ApiResponse, ApiSuccess, ApiFailure } from '@/types/api';
 
 /**
  * API response handling utilities
+ * All functions now use strict typing with no 'any' types
  */
-
-export type ApiResponse<T = any> = {
-  success: boolean;
-  data?: T;
-  error?: string;
-};
 
 /**
  * Handle API response with standardized success/error handling
  */
-export const handleApiResponse = <T = any>(
+export const handleApiResponse = <T>(
   response: ApiResponse<T>,
   options: {
     onSuccess?: (data: T) => void;
@@ -44,7 +40,7 @@ export const handleApiResponse = <T = any>(
 /**
  * Create a standardized API response
  */
-export const createApiResponse = <T = any>(
+export const createApiResponse = <T>(
   success: boolean,
   data?: T,
   error?: string
@@ -62,9 +58,17 @@ export const getErrorMessage = (error: unknown, fallback: string = 'An error occ
 };
 
 /**
+ * Create API error response
+ */
+export const createApiError = (error: unknown, fallback?: string): ApiFailure => ({
+  success: false,
+  error: getErrorMessage(error, fallback || 'An error occurred'),
+});
+
+/**
  * Handle async API calls with loading state
  */
-export const handleAsyncApiCall = async <T = any>(
+export const handleAsyncApiCall = <T>(
   apiCall: () => Promise<ApiResponse<T>>,
   options: {
     onSuccess?: (data: T) => void;
@@ -76,18 +80,20 @@ export const handleAsyncApiCall = async <T = any>(
 ): Promise<boolean> => {
   const { setLoading, ...responseOptions } = options;
 
-  try {
-    setLoading?.(true);
-    const response = await apiCall();
-    return handleApiResponse(response, responseOptions);
-  } catch (error) {
-    const errorMessage = getErrorMessage(error);
-    if (responseOptions.showToast !== false) {
-      toast.error(errorMessage);
+  return (async () => {
+    try {
+      setLoading?.(true);
+      const response = await apiCall();
+      return handleApiResponse(response, responseOptions);
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      if (responseOptions.showToast !== false) {
+        toast.error(errorMessage);
+      }
+      responseOptions.onError?.(errorMessage);
+      return false;
+    } finally {
+      setLoading?.(false);
     }
-    responseOptions.onError?.(errorMessage);
-    return false;
-  } finally {
-    setLoading?.(false);
-  }
+  })();
 };

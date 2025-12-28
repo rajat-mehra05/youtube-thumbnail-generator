@@ -2,18 +2,24 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { createApiResponse, createApiError } from '@/lib/utils/api-response';
 import { logger } from '@/lib/utils/logger';
+import type {
+  ProjectResponse,
+  ProjectMutationResponse,
+  BulkDeleteResponse
+} from '@/types/api';
 import type { Project, CanvasState } from '@/types';
 
 export const createProject = async (data: {
   name?: string;
   video_title?: string;
   canvas_state?: CanvasState;
-}): Promise<{ success: boolean; project?: Project; error?: string }> => {
+}): Promise<ProjectResponse> => {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
+    if (!user) return createApiError('Not authenticated');
 
     const { data: project, error } = await supabase
       .from('projects')
@@ -28,10 +34,10 @@ export const createProject = async (data: {
 
     if (error) throw error;
     revalidatePath('/dashboard');
-    return { success: true, project: project as Project };
+    return createApiResponse(true, project as Project);
   } catch (error) {
     logger.error('Create project error:', { error });
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to create project' };
+    return createApiError(error, 'Failed to create project');
   }
 };
 

@@ -2,16 +2,16 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import type { TemplateCategory, EmotionType, ImageStyle, AspectRatio } from '@/types';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { VideoTitleField, TopicSelect, EmotionSelect, ImageStyleSelect, AspectRatioSelect, ReferenceImageField } from './form-fields';
 import { validateAIGenerationForm } from '@/lib/utils/validation';
+import type { TemplateCategory, EmotionType, ImageStyle, AspectRatio } from '@/types';
 
 interface AIFormProps {
-  onSubmit: (data: { 
-    videoTitle: string; 
-    topic: TemplateCategory; 
-    emotion: EmotionType; 
+  onSubmit: (data: {
+    videoTitle: string;
+    topic: TemplateCategory;
+    emotion: EmotionType;
     imageStyle: ImageStyle;
     aspectRatio: AspectRatio;
     referenceImageUrl?: string;
@@ -29,14 +29,14 @@ export const AIForm = ({ onSubmit, loading = false, disabled = false, showRefere
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   const [referenceImageUrl, setReferenceImageUrl] = useState<string | undefined>();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const validation = validateAIGenerationForm({ videoTitle, topic, emotion });
     if (!validation.isValid) return;
     onSubmit({
       videoTitle,
-      topic,
-      emotion,
+      topic: topic as TemplateCategory,      // Cast to strict type after validation
+      emotion: emotion as EmotionType,      // Cast to strict type after validation
       imageStyle,
       aspectRatio,
       referenceImageUrl
@@ -60,9 +60,9 @@ export const AIForm = ({ onSubmit, loading = false, disabled = false, showRefere
           disabled={disabled || loading}
         />
       )}
-      <Button 
-        type="submit" 
-        disabled={!isValid || loading || disabled} 
+      <Button
+        type="submit"
+        disabled={!isValid || loading || disabled}
         className="w-full h-14 text-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700"
       >
         {loading ? (

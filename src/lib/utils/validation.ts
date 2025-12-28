@@ -9,8 +9,9 @@ export const isNonEmptyString = (str: string): boolean => str.trim().length > 0;
 
 /**
  * Validate that all required form fields are present
+ * Uses generic constraint to allow any object type while maintaining type safety
  */
-export const validateRequiredFields = (fields: Record<string, any>): boolean => {
+export const validateRequiredFields = <T extends Record<string, unknown>>(fields: T): boolean => {
     return Object.values(fields).every(field =>
         field !== null && field !== undefined && field !== ''
     );

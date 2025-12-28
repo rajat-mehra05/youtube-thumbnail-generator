@@ -40,12 +40,17 @@ export const generateImageId = (): string => `image_${generateId()}`;
 export const generateSessionId = (): string => `session_${generateId()}`;
 
 /**
+ * Cache parameter types - only allow serializable values
+ */
+type CacheParams = Record<string, string | number | boolean | null | undefined>;
+
+/**
  * Generate a cache key with prefix
  */
-export const generateCacheKey = (type: string, params: Record<string, any>): string => {
+export const generateCacheKey = (type: string, params: CacheParams): string => {
   const paramString = Object.entries(params)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}:${String(value)}`)
+    .map(([key, value]) => `${key}:${String(value ?? 'null')}`)
     .join('|');
   return `${type}_${paramString}`;
 };

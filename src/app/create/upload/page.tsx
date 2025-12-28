@@ -115,12 +115,12 @@ export default function CreateUploadPage() {
         canvas_state: initialCanvasState,
       });
 
-      if (!result.success || !result.project) {
+      if (!result.success || !result.data) {
         throw new Error(result.error || 'Failed to create project');
       }
 
       toast.success('Project created!');
-      router.push(ROUTES.EDITOR(result.project.id));
+      router.push(ROUTES.EDITOR(result.data.id));
     } catch (error) {
       logger.error('Upload error:', { error });
       toast.error('Failed to create project. Make sure storage is set up.');

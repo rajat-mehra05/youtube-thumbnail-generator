@@ -70,12 +70,12 @@ export function TemplatesContent() {
         name: `${template.name} - Copy`,
       });
 
-      if (!result.success || !result.project) {
+      if (!result.success || !result.data) {
         throw new Error(result.error || 'Failed to create project');
       }
 
       // Navigate to editor with the template's canvas state
-      router.push(ROUTES.EDITOR(result.project.id));
+      router.push(ROUTES.EDITOR(result.data.id));
     } catch (error) {
       logger.error('Error using template:', { error });
       toast.error('Failed to use template');

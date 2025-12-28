@@ -2,7 +2,19 @@ import { ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE_MB } from '@/lib/constants';
 
 /**
  * File validation and utility functions
+ * Strict TypeScript with no 'any' types
  */
+
+// MIME type union for allowed image types
+type AllowedMimeType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
+
+// Create typed array of allowed MIME types
+const ALLOWED_MIME_TYPES: readonly AllowedMimeType[] = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif'
+] as const;
 
 /**
  * Validate file size against maximum allowed size
@@ -15,7 +27,14 @@ export const validateFileSize = (file: File, maxSizeMB: number = MAX_FILE_SIZE_M
  * Validate file type against allowed image types
  */
 export const validateFileType = (file: File): boolean => {
-  return ALLOWED_IMAGE_TYPES.includes(file.type as any);
+  return ALLOWED_MIME_TYPES.includes(file.type as AllowedMimeType);
+};
+
+/**
+ * Type guard to check if a MIME type is allowed
+ */
+export const isAllowedMimeType = (mimeType: string): mimeType is AllowedMimeType => {
+  return ALLOWED_MIME_TYPES.includes(mimeType as AllowedMimeType);
 };
 
 /**

@@ -72,17 +72,17 @@ export default function EditorPage() {
 
         if (!isMounted) return;
 
-        if (!result.success || !result.project) {
+        if (!result.success || !result.data) {
           toast.error('Project not found');
           router.push(ROUTES.DASHBOARD);
           return;
         }
 
-        setProject(result.project);
+        setProject(result.data);
 
         // Load canvas state if exists
-        if (result.project.canvas_state) {
-          loadState(result.project.canvas_state);
+        if (result.data.canvas_state) {
+          loadState(result.data.canvas_state);
         }
       } catch (error) {
         logger.error('Failed to fetch project:', { error });

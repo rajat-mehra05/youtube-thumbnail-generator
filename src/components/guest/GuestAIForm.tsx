@@ -19,11 +19,16 @@ export const GuestAIForm = ({ onSubmit, loading = false, disabled = false }: Gue
   const [emotion, setEmotion] = useState<EmotionType | ''>('');
   const [style, setStyle] = useState<StylePreference | ''>('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const isValid = isNonEmptyString(videoTitle) && !!topic && !!emotion;
     if (!isValid) return;
-    onSubmit({ videoTitle, topic, emotion, style: style || 'bold_text' });
+    onSubmit({
+      videoTitle,
+      topic: topic as TemplateCategory,      // Cast to strict type after validation
+      emotion: emotion as EmotionType,      // Cast to strict type after validation
+      style: style || 'bold_text'
+    });
   };
 
   const isValid = isNonEmptyString(videoTitle) && !!topic && !!emotion;
