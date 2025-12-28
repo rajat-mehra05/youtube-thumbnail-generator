@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import type { TemplateCategory, EmotionType, StylePreference } from '@/types';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { VideoTitleField, TopicSelect, EmotionSelect, StyleSelect } from '@/components/create/form-fields';
+import { isNonEmptyString, validateRequiredFields } from '@/lib/utils/validation';
 
 interface GuestAIFormProps {
   onSubmit: (data: { videoTitle: string; topic: TemplateCategory; emotion: EmotionType; style: StylePreference }) => void;
@@ -20,11 +21,12 @@ export const GuestAIForm = ({ onSubmit, loading = false, disabled = false }: Gue
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!videoTitle || !topic || !emotion) return;
+    const isValid = isNonEmptyString(videoTitle) && !!topic && !!emotion;
+    if (!isValid) return;
     onSubmit({ videoTitle, topic, emotion, style: style || 'bold_text' });
   };
 
-  const isValid = videoTitle.trim().length > 0 && topic && emotion;
+  const isValid = isNonEmptyString(videoTitle) && !!topic && !!emotion;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

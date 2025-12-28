@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Sparkles, Wand2 } from 'lucide-react';
+import { logger } from '@/lib/utils/logger';
 import {
   Dialog,
   DialogContent,
@@ -88,7 +89,7 @@ export const AIMagicModal = ({
       setAspectRatio('16:9');
       setEmotion('excited');
     } catch (error) {
-      console.error('AI generation error:', error);
+      logger.error('AI generation error:', { error });
       toast.error('Failed to generate background');
     } finally {
       setLoading(false);

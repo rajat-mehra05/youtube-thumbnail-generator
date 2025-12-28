@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
+import { generateProjectId, generateImageId } from '@/lib/utils/id-generator';
+import { logger } from '@/lib/utils/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,7 +40,7 @@ export default function CreateUploadPage() {
       const supabase = createClient();
 
       // Generate a unique project ID for the file path
-      const tempProjectId = uuidv4();
+      const tempProjectId = generateProjectId();
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${user.id}/${tempProjectId}/${fileName}`;
@@ -85,7 +86,7 @@ export default function CreateUploadPage() {
 
       // Create initial canvas state with the uploaded image as background
       const imageLayer: ImageLayer = {
-        id: uuidv4(),
+        id: generateImageId(),
         type: 'image',
         name: 'Background Image',
         x,
@@ -121,7 +122,7 @@ export default function CreateUploadPage() {
       toast.success('Project created!');
       router.push(ROUTES.EDITOR(result.project.id));
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', { error });
       toast.error('Failed to create project. Make sure storage is set up.');
     } finally {
       setLoading(false);

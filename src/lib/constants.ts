@@ -98,18 +98,39 @@ export const AVAILABLE_FONTS = [
   'Bangers',
 ] as const;
 
+// Color constants
+export const COLORS = {
+  WHITE: '#FFFFFF',
+  BLACK: '#000000',
+  TRANSPARENT: 'transparent',
+  RED: '#FF0000',
+  ORANGE: '#FF6B00',
+  YELLOW: '#FFDD00',
+  GREEN: '#00FF00',
+  CYAN: '#00DDFF',
+  BLUE: '#0066FF',
+  PURPLE: '#8B00FF',
+  PINK: '#FF00AA',
+} as const;
+
+// Default text colors for layers
+export const DEFAULT_TEXT_COLORS = {
+  FILL: COLORS.WHITE,
+  STROKE: COLORS.BLACK,
+} as const;
+
 // Default colors palette
 export const COLOR_PALETTE = [
-  '#FFFFFF', // White
-  '#000000', // Black
-  '#FF0000', // Red
-  '#FF6B00', // Orange
-  '#FFDD00', // Yellow
-  '#00FF00', // Green
-  '#00DDFF', // Cyan
-  '#0066FF', // Blue
-  '#8B00FF', // Purple
-  '#FF00AA', // Pink
+  COLORS.WHITE, // White
+  COLORS.BLACK, // Black
+  COLORS.RED, // Red
+  COLORS.ORANGE, // Orange
+  COLORS.YELLOW, // Yellow
+  COLORS.GREEN, // Green
+  COLORS.CYAN, // Cyan
+  COLORS.BLUE, // Blue
+  COLORS.PURPLE, // Purple
+  COLORS.PINK, // Pink
 ] as const;
 
 // Routes

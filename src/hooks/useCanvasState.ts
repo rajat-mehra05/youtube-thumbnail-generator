@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/lib/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, DEFAULT_TEXT_COLORS } from '@/lib/constants';
+import { generateLayerId } from '@/lib/utils/id-generator';
+import { logger } from '@/lib/utils/logger';
 import type { CanvasState, CanvasLayer, TextLayer, ImageLayer, ShapeLayer, ShapeType } from '@/types';
 
 const createDefaultCanvasState = (): CanvasState => ({
@@ -34,7 +35,7 @@ export const useCanvasState = (initialState?: CanvasState) => {
   // Add layer
   const addLayer = useCallback(
     (type: 'text' | 'image' | ShapeType, data?: Partial<CanvasLayer>) => {
-      const id = uuidv4();
+      const id = generateLayerId();
       const baseLayer = {
         id,
         x: CANVAS_WIDTH / 4,
@@ -62,8 +63,8 @@ export const useCanvasState = (initialState?: CanvasState) => {
           fontSize: 72,
           fontFamily: 'Montserrat',
           fontStyle: 'bold',
-          fill: '#FFFFFF',
-          stroke: '#000000',
+          fill: DEFAULT_TEXT_COLORS.FILL,
+          stroke: DEFAULT_TEXT_COLORS.STROKE,
           strokeWidth: 4,
           align: 'center',
           verticalAlign: 'middle',
@@ -83,7 +84,7 @@ export const useCanvasState = (initialState?: CanvasState) => {
           type: 'shape',
           shapeType: type as ShapeType,
           fill: '#8B5CF6',
-          stroke: '#000000',
+          stroke: DEFAULT_TEXT_COLORS.STROKE,
           strokeWidth: 2,
           cornerRadius: type === 'rectangle' ? 8 : 0,
         } as ShapeLayer;
@@ -221,7 +222,7 @@ export const useCanvasState = (initialState?: CanvasState) => {
     const seenIds = new Set<string>();
     const uniqueLayers = state.layers.filter((layer) => {
       if (seenIds.has(layer.id)) {
-        console.warn('Duplicate layer ID found and removed:', layer.id);
+        logger.warn('Duplicate layer ID found and removed:', { layerId: layer.id });
         return false;
       }
       seenIds.add(layer.id);

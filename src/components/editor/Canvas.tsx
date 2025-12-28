@@ -4,6 +4,8 @@ import { useRef, useEffect, useState } from 'react';
 import { Stage, Layer, Rect, Text, Image as KonvaImage, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/lib/constants';
+import { logger } from '@/lib/utils/logger';
+import { truncateUrl } from '@/lib/utils/string-utils';
 import type { CanvasState, CanvasLayer, TextLayer, ImageLayer } from '@/types';
 
 interface CanvasProps {
@@ -57,15 +59,15 @@ const ImageLayerComponent = ({
     };
 
     img.onerror = (e) => {
-      console.error('Failed to load image:', {
-        src: layer.src.substring(0, 100) + '...',
+      logger.error('Failed to load image:', {
+        src: truncateUrl(layer.src),
         isDataUrl,
         error: e,
       });
 
       // If it's not a data URL and crossOrigin failed, try without it
       if (!isDataUrl) {
-        console.log('Retrying without crossOrigin...');
+        logger.debug('Retrying without crossOrigin...');
         const fallbackImg = new window.Image();
         fallbackImg.onload = () => {
           setImage(fallbackImg);
@@ -73,7 +75,7 @@ const ImageLayerComponent = ({
           setError(false);
         };
         fallbackImg.onerror = () => {
-          console.error('Fallback also failed. Image cannot be loaded.');
+          logger.error('Fallback also failed. Image cannot be loaded.');
           setError(true);
           setLoading(false);
         };

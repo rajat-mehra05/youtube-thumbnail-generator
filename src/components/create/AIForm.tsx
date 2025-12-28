@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import type { TemplateCategory, EmotionType, ImageStyle, AspectRatio } from '@/types';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { VideoTitleField, TopicSelect, EmotionSelect, ImageStyleSelect, AspectRatioSelect, ReferenceImageField } from './form-fields';
+import { validateAIGenerationForm } from '@/lib/utils/validation';
 
 interface AIFormProps {
   onSubmit: (data: { 
@@ -30,18 +31,20 @@ export const AIForm = ({ onSubmit, loading = false, disabled = false, showRefere
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!videoTitle || !topic || !emotion) return;
-    onSubmit({ 
-      videoTitle, 
-      topic, 
-      emotion, 
+    const validation = validateAIGenerationForm({ videoTitle, topic, emotion });
+    if (!validation.isValid) return;
+    onSubmit({
+      videoTitle,
+      topic,
+      emotion,
       imageStyle,
       aspectRatio,
-      referenceImageUrl 
+      referenceImageUrl
     });
   };
 
-  const isValid = videoTitle.trim().length > 0 && topic && emotion;
+  const validation = validateAIGenerationForm({ videoTitle, topic, emotion });
+  const isValid = validation.isValid;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

@@ -1,0 +1,51 @@
+import { v4 as uuidv4 } from 'uuid';
+
+/**
+ * ID generation utilities
+ */
+
+/**
+ * Generate a unique ID using UUID v4
+ */
+export const generateId = (): string => uuidv4();
+
+/**
+ * Generate a project ID with prefix
+ */
+export const generateProjectId = (): string => `project_${generateId()}`;
+
+/**
+ * Generate a layer ID with prefix
+ */
+export const generateLayerId = (): string => `layer_${generateId()}`;
+
+/**
+ * Generate a thumbnail ID with prefix
+ */
+export const generateThumbnailId = (): string => `thumbnail_${generateId()}`;
+
+/**
+ * Generate a template ID with prefix
+ */
+export const generateTemplateId = (): string => `template_${generateId()}`;
+
+/**
+ * Generate an image ID with prefix
+ */
+export const generateImageId = (): string => `image_${generateId()}`;
+
+/**
+ * Generate a session ID with prefix
+ */
+export const generateSessionId = (): string => `session_${generateId()}`;
+
+/**
+ * Generate a cache key with prefix
+ */
+export const generateCacheKey = (type: string, params: Record<string, any>): string => {
+  const paramString = Object.entries(params)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}:${String(value)}`)
+    .join('|');
+  return `${type}_${paramString}`;
+};

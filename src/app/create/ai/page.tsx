@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
+import { generateProjectId } from '@/lib/utils/id-generator';
+import { handleApiResponse, handleAsyncApiCall } from '@/lib/utils/api-response';
 import { Card, CardContent } from '@/components/ui/card';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -21,75 +22,67 @@ export default function CreateAIPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleBackgroundGenerated = async (backgroundUrl: string) => {
-    setLoading(true);
     setError(null);
-
-    try {
-      // Create thumbnail project with just the background
-      await createThumbnailProject(backgroundUrl);
-    } catch (err) {
-      console.error('Project creation error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create thumbnail';
-      setError(errorMessage);
-      toast.error(errorMessage);
-      setLoading(false);
-    }
+    await createThumbnailProject(backgroundUrl);
   };
 
   const createThumbnailProject = async (backgroundUrl: string) => {
-    try {
-      // Use default 16:9 dimensions for the canvas
-      const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions('16:9');
+    const success = await handleAsyncApiCall(
+      async () => {
+        // Use default 16:9 dimensions for the canvas
+        const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions('16:9');
 
-      // Build canvas state with just the background layer
-      const layers: ImageLayer[] = [];
+        // Build canvas state with just the background layer
+        const layers: ImageLayer[] = [];
 
-      // Add background image layer
-      const bgLayer: ImageLayer = {
-        id: uuidv4(),
-        type: 'image',
-        name: 'Background',
-        x: 0,
-        y: 0,
-        width: canvasWidth,
-        height: canvasHeight,
-        rotation: 0,
-        scaleX: 1,
-        scaleY: 1,
-        opacity: 1,
-        zIndex: 0,
-        visible: true,
-        locked: true,
-        src: backgroundUrl,
-      };
-      layers.push(bgLayer);
+        // Add background image layer
+        const bgLayer: ImageLayer = {
+          id: generateProjectId(),
+          type: 'image',
+          name: 'Background',
+          x: 0,
+          y: 0,
+          width: canvasWidth,
+          height: canvasHeight,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          opacity: 1,
+          zIndex: 0,
+          visible: true,
+          locked: true,
+          src: backgroundUrl,
+        };
+        layers.push(bgLayer);
 
-      // Create canvas state with background only
-      const canvasState: CanvasState = {
-        width: canvasWidth,
-        height: canvasHeight,
-        layers,
-      };
+        // Create canvas state with background only
+        const canvasState: CanvasState = {
+          width: canvasWidth,
+          height: canvasHeight,
+          layers,
+        };
 
-      // Create project with the background
-      const projectResult = await createProject({
-        name: 'AI Generated Background',
-        video_title: '',
-        canvas_state: canvasState,
-      });
-
-      if (!projectResult.success || !projectResult.project) {
-        throw new Error(projectResult.error || 'Failed to create project');
+        // Create project with the background
+        return await createProject({
+          name: 'AI Generated Background',
+          video_title: '',
+          canvas_state: canvasState,
+        });
+      },
+      {
+        onSuccess: (project) => {
+          toast.success('Background created! Opening editor...');
+          router.push(ROUTES.EDITOR(project.id));
+        },
+        onError: (error) => {
+          setError(error);
+        },
+        setLoading,
       }
+    );
 
-      toast.success('Background created! Opening editor...');
-      router.push(ROUTES.EDITOR(projectResult.project.id));
-    } catch (error) {
-      console.error('Project creation error:', error);
-      toast.error('Failed to create project');
-      throw error;
-    } finally {
-      setLoading(false);
+    if (!success) {
+      throw new Error('Failed to create project');
     }
   };
 

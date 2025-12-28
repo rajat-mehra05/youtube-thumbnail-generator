@@ -4,6 +4,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import type { ConceptData, TemplateCategory, EmotionType, StylePreference } from '@/types';
 import { generateCacheKey, checkCache, storeInCache } from './cache';
+import { processImageForStorage, uploadToSupabaseStorage, generateImageFilename } from '@/lib/utils/image-processing';
+import { logger } from '@/lib/utils/logger';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
@@ -70,8 +72,9 @@ export const generateConcepts = async (
     await storeInCache(cacheKey, 'llm_response', concepts, 24);
     return { success: true, concepts };
   } catch (error) {
-    console.error('Concept generation error:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to generate concepts' };
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate concepts';
+    logger.error('Concept generation error:', { error: errorMessage });
+    return { success: false, error: errorMessage };
   }
 };
 
@@ -164,8 +167,9 @@ export const generateImage = async (
     await storeInCache(cacheKey, 'image_generation', { imageUrl }, 168);
     return { success: true, imageUrl };
   } catch (error) {
-    console.error('Image generation error:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to generate image' };
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate image';
+    logger.error('Image generation error:', { error: errorMessage });
+    return { success: false, error: errorMessage };
   }
 };
 
@@ -190,7 +194,7 @@ export const generateImageAndStore = async (
   input: GenerateImageInput
 ): Promise<{ success: boolean; backgroundUrl?: string; error?: string }> => {
   try {
-    console.log('🎨 Starting image generation...');
+    logger.info('Starting image generation...');
 
     // Generate the image with aspect ratio support
     const imageResult = await generateImage({ ...input, aspectRatio: input.aspectRatio });
@@ -199,115 +203,35 @@ export const generateImageAndStore = async (
     }
 
     const dallEUrl = imageResult.imageUrl;
-    console.log('✅ DALL-E image generated:', dallEUrl.substring(0, 100) + '...');
+    logger.imageGeneration(dallEUrl.substring(0, 50));
 
-    // Always convert to base64 for reliable, CORS-free usage
-    // This ensures images work everywhere without storage setup
-    try {
-      console.log('📥 Downloading image from DALL-E...');
-      const response = await fetch(dallEUrl);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      console.log(`✅ Downloaded ${(buffer.length / 1024 / 1024).toFixed(2)}MB image`);
-
-      // Try Supabase storage first (if configured)
-      try {
-        console.log('☁️ Attempting Supabase storage upload...');
-        const { createClient } = await import('@/lib/supabase/server');
-        const supabase = await createClient();
-
-        const userPrefix = input.userId || input.sessionId || 'guest';
-        const fileName = `ai-bg-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
-        const filePath = `${userPrefix}/ai-generated/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('generated-images')
-          .upload(filePath, buffer, {
-            contentType: 'image/png',
-            upsert: true,
-            cacheControl: '31536000',
-          });
-
-        if (uploadError) {
-          console.warn('⚠️ Supabase upload failed:', uploadError.message);
-          throw uploadError;
-        }
-
-        // Try public URL first
-        const { data: publicUrlData } = supabase.storage
-          .from('generated-images')
-          .getPublicUrl(filePath);
-
-        if (publicUrlData?.publicUrl) {
-          console.log('✅ Using Supabase public URL');
-          return { success: true, backgroundUrl: publicUrlData.publicUrl };
-        }
-
-        // Fallback to signed URL
-        const { data: signedData } = await supabase.storage
-          .from('generated-images')
-          .createSignedUrl(filePath, 60 * 60 * 24 * 365);
-
-        if (signedData?.signedUrl) {
-          console.log('✅ Using Supabase signed URL');
-          return { success: true, backgroundUrl: signedData.signedUrl };
-        }
-
-        throw new Error('Failed to get Supabase URL');
-      } catch (storageError) {
-        console.warn('⚠️ Supabase storage not available, using base64 fallback');
-        console.error('Storage error details:', storageError);
-      }
-
-      // Reliable fallback: Convert to base64 data URL
-      // This works everywhere without CORS or storage setup
-      console.log('🔄 Converting to base64 data URL...');
-
-      // Optimize: Convert to JPEG for smaller size (thumbnails don't need PNG transparency)
-      let finalBuffer: Buffer = buffer;
-      let mimeType = 'image/png';
-
-      try {
-        // Try to use sharp for compression if available
-        const sharp = await import('sharp').catch(() => null);
-        if (sharp?.default) {
-          console.log('📦 Compressing image with sharp...');
-          const compressedBuffer = await sharp.default(buffer)
-            .jpeg({ quality: 85, mozjpeg: true })
-            .toBuffer();
-          finalBuffer = Buffer.from(compressedBuffer);
-          mimeType = 'image/jpeg';
-          console.log(`✅ Compressed: ${(buffer.length / 1024 / 1024).toFixed(2)}MB → ${(finalBuffer.length / 1024 / 1024).toFixed(2)}MB`);
-        }
-      } catch (compressionError) {
-        console.log('⚠️ Sharp compression failed, using PNG without compression');
-      }
-
-      const base64 = finalBuffer.toString('base64');
-      const dataUrl = `data:${mimeType};base64,${base64}`;
-      console.log(`✅ Created base64 data URL (${(dataUrl.length / 1024 / 1024).toFixed(2)}MB)`);
-
-      return {
-        success: true,
-        backgroundUrl: dataUrl,
-      };
-    } catch (downloadError) {
-      console.error('❌ Failed to download/convert image:', downloadError);
-      return {
-        success: false,
-        error: 'Failed to download and process image from DALL-E',
-      };
+    // Process and store the image
+    const processResult = await processImageForStorage(dallEUrl);
+    if (!processResult.success) {
+      return processResult;
     }
+
+    // Try Supabase storage first (if configured)
+    const filePath = generateImageFilename(input.userId, input.sessionId);
+    const uploadResult = await uploadToSupabaseStorage(
+      Buffer.from(processResult.backgroundUrl!.split(',')[1], 'base64'),
+      filePath,
+      'image/jpeg'
+    );
+
+    if (uploadResult.success) {
+      return { success: true, backgroundUrl: uploadResult.url };
+    }
+
+    // Fallback to base64 data URL
+    logger.debug('Using base64 fallback for image storage');
+    return processResult;
   } catch (error) {
-    console.error('❌ Image generation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate image';
+    logger.error('Image generation failed:', { error: errorMessage });
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to generate image'
+      error: errorMessage
     };
   }
 };

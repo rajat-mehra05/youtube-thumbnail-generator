@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { generateSessionId } from '@/lib/utils/id-generator';
 import type { GuestSession, ConceptData } from '@/types';
 import { GUEST_MAX_GENERATIONS } from '@/lib/constants';
 
@@ -38,7 +38,7 @@ export const getGuestSession = (): GuestSession | null => {
  */
 export const createGuestSession = (): GuestSession => {
   const session: GuestSession = {
-    sessionId: uuidv4(),
+    sessionId: generateSessionId(),
     generationsUsed: 0,
     generatedConceptId: null,
     createdAt: new Date().toISOString(),

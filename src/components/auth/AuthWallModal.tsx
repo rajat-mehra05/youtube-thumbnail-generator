@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { logger } from '@/lib/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ROUTES } from '@/lib/constants';
@@ -45,10 +46,10 @@ export const AuthWallModal = ({
       });
 
       if (error) {
-        console.error('Google sign-in error:', error);
+        logger.error('Google sign-in error:', { error });
       }
     } catch (error) {
-      console.error('Sign-in error:', error);
+      logger.error('Sign-in error:', { error });
     } finally {
       setLoading(false);
     }

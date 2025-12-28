@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { logger } from '@/lib/utils/logger';
 import type { Project, CanvasState } from '@/types';
 
 export const createProject = async (data: {
@@ -29,7 +30,7 @@ export const createProject = async (data: {
     revalidatePath('/dashboard');
     return { success: true, project: project as Project };
   } catch (error) {
-    console.error('Create project error:', error);
+    logger.error('Create project error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to create project' };
   }
 };
@@ -56,7 +57,7 @@ export const updateProject = async (
     revalidatePath(`/editor/${projectId}`);
     return { success: true, project: project as Project };
   } catch (error) {
-    console.error('Update project error:', error);
+    logger.error('Update project error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to update project' };
   }
 };
@@ -72,7 +73,7 @@ export const deleteProject = async (projectId: string): Promise<{ success: boole
     revalidatePath('/dashboard');
     return { success: true };
   } catch (error) {
-    console.error('Delete project error:', error);
+    logger.error('Delete project error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to delete project' };
   }
 };
@@ -105,7 +106,7 @@ export const duplicateProject = async (projectId: string): Promise<{ success: bo
     revalidatePath('/dashboard');
     return { success: true, project: project as Project };
   } catch (error) {
-    console.error('Duplicate project error:', error);
+    logger.error('Duplicate project error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to duplicate project' };
   }
 };
@@ -130,7 +131,7 @@ export const bulkDeleteProjects = async (projectIds: string[]): Promise<{ succes
     revalidatePath('/dashboard');
     return { success: true, deletedCount: count || 0 };
   } catch (error) {
-    console.error('Bulk delete projects error:', error);
+    logger.error('Bulk delete projects error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to delete projects' };
   }
 };
@@ -150,7 +151,7 @@ export const deleteAllProjects = async (): Promise<{ success: boolean; deletedCo
     revalidatePath('/dashboard');
     return { success: true, deletedCount: count || 0 };
   } catch (error) {
-    console.error('Delete all projects error:', error);
+    logger.error('Delete all projects error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to delete all projects' };
   }
 };

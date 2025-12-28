@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import type { ConceptData } from '@/types';
 
 /**
@@ -24,7 +25,7 @@ export const syncGuestSession = async (
   );
 
   if (error) {
-    console.error('Error syncing guest session:', error);
+    logger.error('Error syncing guest session:', { error });
     return { success: false, error: error.message };
   }
 
@@ -87,7 +88,7 @@ export const transferGuestDataToUser = async (
       .single();
 
     if (projectError) {
-      console.error('Error creating project:', projectError);
+      logger.error('Error creating project:', { error: projectError });
       return { success: false, error: projectError.message, projectId: null };
     }
 

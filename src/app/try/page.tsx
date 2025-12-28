@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '@/lib/utils/logger';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { GuestAIForm, TrialUsedCard, ConceptPreview } from '@/components/guest';
@@ -12,7 +13,7 @@ import { getOrCreateGuestSession, getRemainingGenerations, hasRemainingGeneratio
 import { syncGuestSession } from '@/lib/actions/guest-session';
 import { generateConcepts } from '@/lib/actions/ai-generation';
 import type { TemplateCategory, EmotionType, StylePreference, ConceptData } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
+import { generateId } from '@/lib/utils/id-generator';
 import { LoadingCard } from '@/components/ui/loading-spinner';
 import { InlineError } from '@/components/ui/error-message';
 
@@ -43,11 +44,11 @@ export default function TryPage() {
       incrementGuestGenerations();
       setGenerationsRemaining(getRemainingGenerations());
       setGeneratedConcepts(result.concepts);
-      storeGeneratedConcept(uuidv4());
+      storeGeneratedConcept(generateId());
       await syncGuestSession(session.sessionId, session.generationsUsed + 1, result.concepts[0]);
       setShowAuthWall(true);
     } catch (err) {
-      console.error('Generation error:', err);
+      logger.error('Generation error:', { error: err });
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);

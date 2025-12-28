@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { extractErrorMessage } from '@/lib/utils/error-handling';
+import { logger } from '@/lib/utils/logger';
 import type { Project } from '@/types';
 
 export const getProjects = async (): Promise<{ success: boolean; projects?: Project[]; error?: string }> => {
@@ -20,7 +21,7 @@ export const getProjects = async (): Promise<{ success: boolean; projects?: Proj
     return { success: true, projects: data as Project[] };
   } catch (error) {
     const errorMessage = extractErrorMessage(error, 'Failed to fetch projects');
-    console.error('Get projects error:', errorMessage, error);
+    logger.error('Get projects error:', { errorMessage, error });
     return { success: false, error: errorMessage };
   }
 };
@@ -42,7 +43,7 @@ export const getProject = async (projectId: string): Promise<{ success: boolean;
     return { success: true, project: data as Project };
   } catch (error) {
     const errorMessage = extractErrorMessage(error, 'Failed to fetch project');
-    console.error('Get project error:', errorMessage, error);
+    logger.error('Get project error:', { errorMessage, error });
     return { success: false, error: errorMessage };
   }
 };

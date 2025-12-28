@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/lib/constants';
+import { logger } from '@/lib/utils/logger';
 
 export default function Error({
     error,
@@ -13,7 +14,7 @@ export default function Error({
     reset: () => void;
 }) {
     useEffect(() => {
-        console.error('Application error:', error);
+        logger.error('Application error:', { error });
     }, [error]);
 
     return (

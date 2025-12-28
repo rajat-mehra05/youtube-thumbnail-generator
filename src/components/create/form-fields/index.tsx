@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { Upload, X, Loader2 } from 'lucide-react';
+import { logger } from '@/lib/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -213,7 +214,7 @@ export const ReferenceImageField = ({ value, onChange, disabled }: ReferenceImag
       // In production, you would upload to Supabase Storage here
       onChange?.(objectUrl);
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', { error });
       alert('Failed to process image');
     } finally {
       setUploading(false);

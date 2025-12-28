@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ProjectGrid } from '@/components/dashboard/ProjectGrid';
 import { deleteProject, duplicateProject, bulkDeleteProjects, deleteAllProjects } from '@/lib/actions/projects/mutate';
 import { useGuestTransfer } from '@/hooks';
+import { handleAsyncApiCall } from '@/lib/utils/api-response';
 import type { Project } from '@/types';
 
 interface DashboardClientProps {
@@ -31,39 +32,29 @@ export const DashboardClient = ({ initialProjects }: DashboardClientProps) => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
 
-    setLoading(true);
-    try {
-      const result = await deleteProject(id);
-
-      if (result.success) {
-        setProjects((prev) => prev.filter((p) => p.id !== id));
-        toast.success('Project deleted');
-      } else {
-        toast.error(result.error || 'Failed to delete project');
+    const success = await handleAsyncApiCall(
+      () => deleteProject(id),
+      {
+        onSuccess: () => {
+          setProjects((prev) => prev.filter((p) => p.id !== id));
+        },
+        successMessage: 'Project deleted',
+        setLoading,
       }
-    } catch (error) {
-      toast.error('Something went wrong');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const handleDuplicate = async (id: string) => {
-    setLoading(true);
-    try {
-      const result = await duplicateProject(id);
-
-      if (result.success && result.project) {
-        setProjects((prev) => [result.project!, ...prev]);
-        toast.success('Project duplicated');
-      } else {
-        toast.error(result.error || 'Failed to duplicate project');
+    const success = await handleAsyncApiCall(
+      () => duplicateProject(id),
+      {
+        onSuccess: (project) => {
+          setProjects((prev) => [project, ...prev]);
+        },
+        successMessage: 'Project duplicated',
+        setLoading,
       }
-    } catch (error) {
-      toast.error('Something went wrong');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const handleToggleSelection = (id: string) => {
@@ -94,23 +85,18 @@ export const DashboardClient = ({ initialProjects }: DashboardClientProps) => {
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await bulkDeleteProjects(Array.from(selectedProjects));
-
-      if (result.success) {
-        setProjects((prev) => prev.filter((p) => !selectedProjects.has(p.id)));
-        setSelectedProjects(new Set());
-        setSelectionMode(false);
-        toast.success(`${count} project${count !== 1 ? 's' : ''} deleted`);
-      } else {
-        toast.error(result.error || 'Failed to delete projects');
+    const success = await handleAsyncApiCall(
+      () => bulkDeleteProjects(Array.from(selectedProjects)),
+      {
+        onSuccess: () => {
+          setProjects((prev) => prev.filter((p) => !selectedProjects.has(p.id)));
+          setSelectedProjects(new Set());
+          setSelectionMode(false);
+        },
+        successMessage: `${count} project${count !== 1 ? 's' : ''} deleted`,
+        setLoading,
       }
-    } catch (error) {
-      toast.error('Something went wrong');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const handleDeleteAll = async () => {
@@ -120,23 +106,18 @@ export const DashboardClient = ({ initialProjects }: DashboardClientProps) => {
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await deleteAllProjects();
-
-      if (result.success) {
-        setProjects([]);
-        setSelectedProjects(new Set());
-        setSelectionMode(false);
-        toast.success(`All projects deleted (${result.deletedCount || 0} items)`);
-      } else {
-        toast.error(result.error || 'Failed to delete all projects');
+    const success = await handleAsyncApiCall(
+      () => deleteAllProjects(),
+      {
+        onSuccess: (result) => {
+          setProjects([]);
+          setSelectedProjects(new Set());
+          setSelectionMode(false);
+        },
+        successMessage: `All projects deleted (${projects.length} items)`,
+        setLoading,
       }
-    } catch (error) {
-      toast.error('Something went wrong');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const handleCancelSelection = () => {
