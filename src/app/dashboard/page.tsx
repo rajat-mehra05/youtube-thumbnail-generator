@@ -51,14 +51,6 @@ export default async function DashboardPage() {
                   : `${projects.length} project${projects.length !== 1 ? 's' : ''}`}
               </p>
             </div>
-            <Link href={ROUTES.CREATE}>
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700"
-              >
-                + Create New
-              </Button>
-            </Link>
           </div>
 
           {/* Project Grid - Client component for interactivity */}

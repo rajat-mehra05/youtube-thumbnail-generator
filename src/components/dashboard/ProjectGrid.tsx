@@ -10,6 +10,9 @@ import type { Project } from '@/types';
 interface ProjectGridProps {
   projects: Project[];
   loading?: boolean;
+  selectionMode?: boolean;
+  selectedProjects?: Set<string>;
+  onToggleSelection?: (id: string) => void;
   onDelete?: (id: string) => void;
   onDuplicate?: (id: string) => void;
 }
@@ -17,6 +20,9 @@ interface ProjectGridProps {
 export const ProjectGrid = ({
   projects,
   loading = false,
+  selectionMode = false,
+  selectedProjects = new Set(),
+  onToggleSelection,
   onDelete,
   onDuplicate,
 }: ProjectGridProps) => {
@@ -59,25 +65,30 @@ export const ProjectGrid = ({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-      {/* Create New Card */}
-      <Link href={ROUTES.CREATE}>
-        <Card className="overflow-hidden border-dashed hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer h-full">
-          <CardContent className="p-0 h-full flex items-center justify-center aspect-video">
-            <div className="text-center p-6">
-              <div className="w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl text-violet-600">+</span>
+      {/* Create New Card - hide in selection mode */}
+      {!selectionMode && (
+        <Link href={ROUTES.CREATE}>
+          <Card className="overflow-hidden border-dashed hover:border-violet-500/50 hover:bg-violet-500/5 transition-all cursor-pointer h-full">
+            <CardContent className="p-0 h-full flex items-center justify-center aspect-video">
+              <div className="text-center p-6">
+                <div className="w-12 h-12 rounded-full bg-violet-500/10 flex items-center justify-center mx-auto mb-3">
+                  <span className="text-2xl text-violet-600">+</span>
+                </div>
+                <p className="font-medium text-sm">Create New</p>
               </div>
-              <p className="font-medium text-sm">Create New</p>
-            </div>
-          </CardContent>
-        </Card>
-      </Link>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
       {/* Project Cards */}
       {projects.map((project) => (
         <ProjectCard
           key={project.id}
           project={project}
+          selectionMode={selectionMode}
+          isSelected={selectedProjects.has(project.id)}
+          onToggleSelection={onToggleSelection}
           onDelete={onDelete}
           onDuplicate={onDuplicate}
         />

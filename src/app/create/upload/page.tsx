@@ -4,17 +4,20 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { ROUTES } from '@/lib/constants';
+import { ROUTES, CANVAS_WIDTH, CANVAS_HEIGHT } from '@/lib/constants';
 import { useUser } from '@/hooks';
 import { createProject } from '@/lib/actions/projects';
+import { createClient } from '@/lib/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ImageDropzone } from '@/components/upload';
+import type { CanvasState, ImageLayer } from '@/types';
 
 export default function CreateUploadPage() {
   const router = useRouter();
@@ -26,15 +29,100 @@ export default function CreateUploadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) { toast.error('Please select an image'); return; }
+    if (!file || !user) {
+      toast.error('Please select an image');
+      return;
+    }
+
     setLoading(true);
     try {
-      const result = await createProject({ name: projectName || 'Uploaded Thumbnail' });
-      if (!result.success || !result.project) throw new Error(result.error || 'Failed to create project');
+      const supabase = createClient();
+
+      // Generate a unique project ID for the file path
+      const tempProjectId = uuidv4();
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${user.id}/${tempProjectId}/${fileName}`;
+
+      // Upload image to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('user-uploads')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get signed URL for the uploaded image
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('user-uploads')
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
+
+      if (signedUrlError || !signedUrlData?.signedUrl) {
+        throw signedUrlError || new Error('Failed to get signed URL');
+      }
+
+      const imageUrl = signedUrlData.signedUrl;
+
+      // Get image dimensions
+      const img = new Image();
+      img.src = preview || URL.createObjectURL(file);
+      await new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+      });
+
+      // Calculate dimensions to fit canvas while maintaining aspect ratio
+      const aspectRatio = img.width / img.height;
+      let layerWidth = CANVAS_WIDTH;
+      let layerHeight = CANVAS_WIDTH / aspectRatio;
+
+      if (layerHeight > CANVAS_HEIGHT) {
+        layerHeight = CANVAS_HEIGHT;
+        layerWidth = CANVAS_HEIGHT * aspectRatio;
+      }
+
+      // Center the image on canvas
+      const x = (CANVAS_WIDTH - layerWidth) / 2;
+      const y = (CANVAS_HEIGHT - layerHeight) / 2;
+
+      // Create initial canvas state with the uploaded image as background
+      const imageLayer: ImageLayer = {
+        id: uuidv4(),
+        type: 'image',
+        name: 'Background Image',
+        x,
+        y,
+        width: layerWidth,
+        height: layerHeight,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        opacity: 1,
+        zIndex: 0,
+        visible: true,
+        locked: false,
+        src: imageUrl,
+      };
+
+      const initialCanvasState: CanvasState = {
+        width: CANVAS_WIDTH,
+        height: CANVAS_HEIGHT,
+        layers: [imageLayer],
+      };
+
+      // Create the project with the initial canvas state
+      const result = await createProject({
+        name: projectName || 'Uploaded Thumbnail',
+        canvas_state: initialCanvasState,
+      });
+
+      if (!result.success || !result.project) {
+        throw new Error(result.error || 'Failed to create project');
+      }
+
+      toast.success('Project created!');
       router.push(ROUTES.EDITOR(result.project.id));
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to create project');
+      toast.error('Failed to create project. Make sure storage is set up.');
     } finally {
       setLoading(false);
     }

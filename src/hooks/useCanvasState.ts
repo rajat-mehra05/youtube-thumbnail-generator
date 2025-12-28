@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/lib/constants';
-import type { CanvasState, CanvasLayer, TextLayer, ImageLayer, ShapeLayer } from '@/types';
+import type { CanvasState, CanvasLayer, TextLayer, ImageLayer, ShapeLayer, ShapeType } from '@/types';
 
 const createDefaultCanvasState = (): CanvasState => ({
   width: CANVAS_WIDTH,
@@ -33,7 +33,7 @@ export const useCanvasState = (initialState?: CanvasState) => {
 
   // Add layer
   const addLayer = useCallback(
-    (type: 'text' | 'image' | 'shape', data?: Partial<CanvasLayer>) => {
+    (type: 'text' | 'image' | ShapeType, data?: Partial<CanvasLayer>) => {
       const id = uuidv4();
       const baseLayer = {
         id,
@@ -77,14 +77,15 @@ export const useCanvasState = (initialState?: CanvasState) => {
           height: 400,
         } as ImageLayer;
       } else {
+        // type is a ShapeType, create a shape layer
         newLayer = {
           ...baseLayer,
           type: 'shape',
-          shapeType: 'rectangle',
+          shapeType: type as ShapeType,
           fill: '#8B5CF6',
           stroke: '#000000',
           strokeWidth: 2,
-          cornerRadius: 8,
+          cornerRadius: type === 'rectangle' ? 8 : 0,
         } as ShapeLayer;
       }
 
@@ -216,9 +217,25 @@ export const useCanvasState = (initialState?: CanvasState) => {
 
   // Load state
   const loadState = useCallback((state: CanvasState) => {
-    setCanvasState(state);
+    // Ensure no duplicate layer IDs
+    const seenIds = new Set<string>();
+    const uniqueLayers = state.layers.filter((layer) => {
+      if (seenIds.has(layer.id)) {
+        console.warn('Duplicate layer ID found and removed:', layer.id);
+        return false;
+      }
+      seenIds.add(layer.id);
+      return true;
+    });
+
+    const sanitizedState = {
+      ...state,
+      layers: uniqueLayers,
+    };
+
+    setCanvasState(sanitizedState);
     setSelectedLayerId(null);
-    setHistory([state]);
+    setHistory([sanitizedState]);
     setHistoryIndex(0);
   }, []);
 

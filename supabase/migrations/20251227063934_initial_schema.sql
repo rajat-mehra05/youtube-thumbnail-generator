@@ -1,5 +1,5 @@
 -- YouTube Thumbnail Generator - Database Schema
--- Run this in your Supabase SQL Editor
+-- Migration: Initial Schema
 
 -- Note: Using gen_random_uuid() which is built into PostgreSQL 13+
 -- No extension needed for Supabase
@@ -246,16 +246,18 @@ CREATE POLICY "Anyone can view templates"
   USING (true);
 
 -- Guest sessions policies (service role only for security)
+-- Service role bypasses RLS entirely, so we deny access to regular users
 CREATE POLICY "Service role can manage guest sessions"
   ON public.guest_sessions FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  USING (false)
+  WITH CHECK (false);
 
 -- Cache entries policies (service role only)
+-- Service role bypasses RLS entirely, so we deny access to regular users
 CREATE POLICY "Service role can manage cache"
   ON public.cache_entries FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  USING (false)
+  WITH CHECK (false);
 
 -- Usage logs policies
 CREATE POLICY "Users can view their own usage"
@@ -335,23 +337,70 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- STORAGE BUCKETS
 -- ============================================
 
--- Note: Run these in the Supabase Dashboard -> Storage
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('user-uploads', 'user-uploads', false)
+ON CONFLICT (id) DO NOTHING;
 
--- INSERT INTO storage.buckets (id, name, public) VALUES ('user-uploads', 'user-uploads', false);
--- INSERT INTO storage.buckets (id, name, public) VALUES ('generated-images', 'generated-images', false);
--- INSERT INTO storage.buckets (id, name, public) VALUES ('exports', 'exports', false);
--- INSERT INTO storage.buckets (id, name, public) VALUES ('templates', 'templates', true);
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('generated-images', 'generated-images', false)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('exports', 'exports', false)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('templates', 'templates', true)
+ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for user-uploads bucket
--- CREATE POLICY "Users can upload to their folder"
---   ON storage.objects FOR INSERT
---   WITH CHECK (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "Users can upload to their folder"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
 
--- CREATE POLICY "Users can view their uploads"
---   ON storage.objects FOR SELECT
---   USING (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "Users can view their uploads"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
 
--- CREATE POLICY "Users can delete their uploads"
---   ON storage.objects FOR DELETE
---   USING (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "Users can delete their uploads"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Storage policies for generated-images bucket
+CREATE POLICY "Users can upload generated images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'generated-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can view their generated images"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'generated-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete their generated images"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'generated-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Storage policies for exports bucket
+CREATE POLICY "Users can upload to their exports folder"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'exports' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can view their exports"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'exports' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete their exports"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'exports' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ============================================
+-- SYNC EXISTING USERS
+-- ============================================
+-- This syncs any existing auth users to the public.users table
+-- (useful if users signed up before this migration was run)
+
+INSERT INTO public.users (id, email, full_name, avatar_url)
+SELECT id, email, raw_user_meta_data->>'full_name', raw_user_meta_data->>'avatar_url'
+FROM auth.users
+WHERE id NOT IN (SELECT id FROM public.users)
+ON CONFLICT (id) DO NOTHING;
 

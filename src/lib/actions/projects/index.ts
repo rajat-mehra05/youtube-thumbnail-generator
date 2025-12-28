@@ -1,2 +1,2 @@
 export { getProjects, getProject } from './get';
-export { createProject, updateProject, deleteProject, duplicateProject } from './mutate';
+export { createProject, updateProject, deleteProject, duplicateProject, bulkDeleteProjects, deleteAllProjects } from './mutate';
