@@ -8,9 +8,9 @@ export const CANVAS_WIDTH = 1280;
 export const CANVAS_HEIGHT = 720;
 export const CANVAS_ASPECT_RATIO = CANVAS_WIDTH / CANVAS_HEIGHT;
 
-// Preview dimensions (for editor)
-export const PREVIEW_WIDTH = 640;
-export const PREVIEW_HEIGHT = 360;
+// Preview dimensions (for editor) - larger for better editing
+export const PREVIEW_WIDTH = 1024;
+export const PREVIEW_HEIGHT = 576;
 
 // Template categories with labels
 export const TEMPLATE_CATEGORIES = [
@@ -39,6 +39,40 @@ export const STYLE_PREFERENCES = [
   { value: 'dark', label: 'Dark' },
   { value: 'professional', label: 'Professional' },
 ] as const;
+
+// Image styles for AI generation
+export const IMAGE_STYLES = [
+  { value: 'auto', label: 'Auto', description: 'Let AI decide the best style' },
+  { value: 'cinematic', label: 'Cinematic', description: 'Photorealistic, movie-like' },
+  { value: '3d_scene', label: '3D Scene', description: '3D rendered environments' },
+  { value: 'anime', label: 'Anime', description: 'Anime/manga illustration' },
+  { value: 'artistic', label: 'Artistic', description: 'Painterly, artistic style' },
+  { value: 'digital_art', label: 'Digital Art', description: 'Modern digital artwork' },
+  { value: 'educational', label: 'Educational', description: 'Clean, informative' },
+  { value: 'fantasy_world', label: 'Fantasy World', description: 'Fantasy & sci-fi' },
+  { value: 'prototyping', label: 'Prototyping & Mockup', description: 'UI/UX mockups' },
+] as const;
+
+// Aspect ratios for thumbnails
+export const ASPECT_RATIOS = [
+  { value: '16:9', label: '16:9', description: 'YouTube Standard', width: 1280, height: 720, dallESize: '1792x1024' },
+  { value: '1:1', label: '1:1', description: 'Square (Instagram)', width: 1024, height: 1024, dallESize: '1024x1024' },
+  { value: '4:3', label: '4:3', description: 'Classic', width: 1024, height: 768, dallESize: '1024x1024' },
+  { value: '3:4', label: '3:4', description: 'Portrait', width: 768, height: 1024, dallESize: '1024x1024' },
+  { value: '9:16', label: '9:16', description: 'Vertical (Shorts)', width: 720, height: 1280, dallESize: '1024x1792' },
+] as const;
+
+// Helper function to get canvas dimensions based on aspect ratio
+export const getCanvasDimensions = (aspectRatio: string) => {
+  const ratio = ASPECT_RATIOS.find(r => r.value === aspectRatio);
+  return ratio ? { width: ratio.width, height: ratio.height } : { width: CANVAS_WIDTH, height: CANVAS_HEIGHT };
+};
+
+// Helper function to get DALL-E image size based on aspect ratio
+export const getDallESize = (aspectRatio: string): '1024x1024' | '1792x1024' | '1024x1792' => {
+  const ratio = ASPECT_RATIOS.find(r => r.value === aspectRatio);
+  return (ratio?.dallESize as '1024x1024' | '1792x1024' | '1024x1792') || '1792x1024';
+};
 
 // Guest limits
 export const GUEST_MAX_GENERATIONS = 1;

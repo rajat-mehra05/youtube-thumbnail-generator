@@ -18,8 +18,13 @@ export const getProjects = async (): Promise<{ success: boolean; projects?: Proj
     if (error) throw error;
     return { success: true, projects: data as Project[] };
   } catch (error) {
-    console.error('Get projects error:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch projects' };
+    const errorMessage = error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error !== null && 'message' in error
+        ? String((error as { message: unknown }).message)
+        : 'Failed to fetch projects';
+    console.error('Get projects error:', errorMessage, error);
+    return { success: false, error: errorMessage };
   }
 };
 
@@ -39,7 +44,12 @@ export const getProject = async (projectId: string): Promise<{ success: boolean;
     if (error) throw error;
     return { success: true, project: data as Project };
   } catch (error) {
-    console.error('Get project error:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch project' };
+    const errorMessage = error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error !== null && 'message' in error
+        ? String((error as { message: unknown }).message)
+        : 'Failed to fetch project';
+    console.error('Get project error:', errorMessage, error);
+    return { success: false, error: errorMessage };
   }
 };

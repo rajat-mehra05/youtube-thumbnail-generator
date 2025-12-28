@@ -1,28 +1,41 @@
 // Database types matching Supabase schema
 
-export type TemplateCategory = 
-  | 'gaming' 
-  | 'vlog' 
-  | 'tutorial' 
-  | 'podcast' 
-  | 'reaction' 
+export type TemplateCategory =
+  | 'gaming'
+  | 'vlog'
+  | 'tutorial'
+  | 'podcast'
+  | 'reaction'
   | 'business';
 
 export type TemplateType = 'full_design' | 'layout_only';
 
-export type EmotionType = 
-  | 'excited' 
-  | 'shocked' 
-  | 'curious' 
-  | 'happy' 
+export type EmotionType =
+  | 'excited'
+  | 'shocked'
+  | 'curious'
+  | 'happy'
   | 'serious';
 
-export type StylePreference = 
-  | 'bold_text' 
-  | 'minimal' 
-  | 'colorful' 
-  | 'dark' 
+export type StylePreference =
+  | 'bold_text'
+  | 'minimal'
+  | 'colorful'
+  | 'dark'
   | 'professional';
+
+export type ImageStyle =
+  | 'auto'
+  | 'cinematic'
+  | '3d_scene'
+  | 'anime'
+  | 'artistic'
+  | 'digital_art'
+  | 'educational'
+  | 'fantasy_world'
+  | 'prototyping';
+
+export type AspectRatio = '16:9' | '1:1' | '4:3' | '3:4' | '9:16';
 
 // User type from Supabase Auth
 export interface User {
@@ -105,7 +118,8 @@ export interface GuestSessionDB {
 export interface ConceptData {
   headline: string;
   subheadline?: string;
-  layout_hints: LayoutHint[];
+  text_position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  layout_hints?: LayoutHint[];
   background_prompt: string;
   color_scheme: string[];
   style: StylePreference;
@@ -217,5 +231,7 @@ export interface AIGenerationFormData {
   topic: TemplateCategory;
   emotion: EmotionType;
   style: StylePreference;
+  imageStyle: ImageStyle;
+  aspectRatio: AspectRatio;
   referenceImageUrl?: string;
 }

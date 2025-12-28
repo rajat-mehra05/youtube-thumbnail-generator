@@ -1,5 +1,5 @@
 -- YouTube Thumbnail Generator - Database Schema
--- Run this in your Supabase SQL Editor
+-- Migration: Initial Schema
 
 -- Note: Using gen_random_uuid() which is built into PostgreSQL 13+
 -- No extension needed for Supabase
@@ -335,23 +335,44 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- STORAGE BUCKETS
 -- ============================================
 
--- Note: Run these in the Supabase Dashboard -> Storage
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('user-uploads', 'user-uploads', false)
+ON CONFLICT (id) DO NOTHING;
 
--- INSERT INTO storage.buckets (id, name, public) VALUES ('user-uploads', 'user-uploads', false);
--- INSERT INTO storage.buckets (id, name, public) VALUES ('generated-images', 'generated-images', false);
--- INSERT INTO storage.buckets (id, name, public) VALUES ('exports', 'exports', false);
--- INSERT INTO storage.buckets (id, name, public) VALUES ('templates', 'templates', true);
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('generated-images', 'generated-images', false)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('exports', 'exports', false)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('templates', 'templates', true)
+ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for user-uploads bucket
--- CREATE POLICY "Users can upload to their folder"
---   ON storage.objects FOR INSERT
---   WITH CHECK (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "Users can upload to their folder"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
 
--- CREATE POLICY "Users can view their uploads"
---   ON storage.objects FOR SELECT
---   USING (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "Users can view their uploads"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
 
--- CREATE POLICY "Users can delete their uploads"
---   ON storage.objects FOR DELETE
---   USING (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "Users can delete their uploads"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ============================================
+-- SYNC EXISTING USERS
+-- ============================================
+-- This syncs any existing auth users to the public.users table
+-- (useful if users signed up before this migration was run)
+
+INSERT INTO public.users (id, email, full_name, avatar_url)
+SELECT id, email, raw_user_meta_data->>'full_name', raw_user_meta_data->>'avatar_url'
+FROM auth.users
+WHERE id NOT IN (SELECT id FROM public.users)
+ON CONFLICT (id) DO NOTHING;
 

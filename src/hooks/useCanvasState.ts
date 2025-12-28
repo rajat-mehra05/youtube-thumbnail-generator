@@ -216,9 +216,25 @@ export const useCanvasState = (initialState?: CanvasState) => {
 
   // Load state
   const loadState = useCallback((state: CanvasState) => {
-    setCanvasState(state);
+    // Ensure no duplicate layer IDs
+    const seenIds = new Set<string>();
+    const uniqueLayers = state.layers.filter((layer) => {
+      if (seenIds.has(layer.id)) {
+        console.warn('Duplicate layer ID found and removed:', layer.id);
+        return false;
+      }
+      seenIds.add(layer.id);
+      return true;
+    });
+
+    const sanitizedState = {
+      ...state,
+      layers: uniqueLayers,
+    };
+
+    setCanvasState(sanitizedState);
     setSelectedLayerId(null);
-    setHistory([state]);
+    setHistory([sanitizedState]);
     setHistoryIndex(0);
   }, []);
 

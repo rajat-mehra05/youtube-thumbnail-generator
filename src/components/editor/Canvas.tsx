@@ -14,6 +14,146 @@ interface CanvasProps {
   previewMode?: boolean;
 }
 
+// Separate component for image layers to properly use hooks
+interface ImageLayerComponentProps {
+  layer: ImageLayer;
+  scale: number;
+  previewMode: boolean;
+  onSelectLayer: (id: string) => void;
+  onUpdateLayer: (id: string, updates: Partial<CanvasLayer>) => void;
+  onTransformEnd: (layer: CanvasLayer, node: Konva.Node) => void;
+}
+
+const ImageLayerComponent = ({
+  layer,
+  scale,
+  previewMode,
+  onSelectLayer,
+  onUpdateLayer,
+  onTransformEnd,
+}: ImageLayerComponentProps) => {
+  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(false);
+    
+    // Check if it's a data URL (base64) - these don't need crossOrigin
+    const isDataUrl = layer.src.startsWith('data:');
+    
+    const img = new window.Image();
+    
+    // Only set crossOrigin for external URLs, not data URLs
+    if (!isDataUrl) {
+      img.crossOrigin = 'anonymous';
+    }
+    
+    img.onload = () => {
+      setImage(img);
+      setLoading(false);
+      setError(false);
+    };
+    
+    img.onerror = (e) => {
+      console.error('Failed to load image:', {
+        src: layer.src.substring(0, 100) + '...',
+        isDataUrl,
+        error: e,
+      });
+      
+      // If it's not a data URL and crossOrigin failed, try without it
+      if (!isDataUrl) {
+        console.log('Retrying without crossOrigin...');
+        const fallbackImg = new window.Image();
+        fallbackImg.onload = () => {
+          setImage(fallbackImg);
+          setLoading(false);
+          setError(false);
+        };
+        fallbackImg.onerror = () => {
+          console.error('Fallback also failed. Image cannot be loaded.');
+          setError(true);
+          setLoading(false);
+        };
+        fallbackImg.src = layer.src;
+      } else {
+        setError(true);
+        setLoading(false);
+      }
+    };
+    
+    img.src = layer.src;
+    
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [layer.src]);
+
+  // Show placeholder for failed images
+  if (error) {
+    return (
+      <Rect
+        key={layer.id}
+        id={layer.id}
+        x={layer.x * scale}
+        y={layer.y * scale}
+        width={layer.width * scale}
+        height={layer.height * scale}
+        fill="#1a1a1a"
+        stroke="#ff4444"
+        strokeWidth={2}
+        dash={[10, 5]}
+      />
+    );
+  }
+
+  // Show loading state
+  if (loading || !image) {
+    return (
+      <Rect
+        key={layer.id}
+        id={layer.id}
+        x={layer.x * scale}
+        y={layer.y * scale}
+        width={layer.width * scale}
+        height={layer.height * scale}
+        fill="#2a2a2a"
+        stroke="#666"
+        strokeWidth={1}
+        opacity={0.5}
+      />
+    );
+  }
+
+  return (
+    <KonvaImage
+      key={layer.id}
+      id={layer.id}
+      image={image}
+      x={layer.x * scale}
+      y={layer.y * scale}
+      width={layer.width * scale}
+      height={layer.height * scale}
+      rotation={layer.rotation}
+      opacity={layer.opacity}
+      visible={layer.visible}
+      draggable={!layer.locked && !previewMode}
+      onClick={() => onSelectLayer(layer.id)}
+      onTap={() => onSelectLayer(layer.id)}
+      onDragEnd={(e) => {
+        onUpdateLayer(layer.id, {
+          x: e.target.x() / scale,
+          y: e.target.y() / scale,
+        });
+      }}
+      onTransformEnd={(e) => onTransformEnd(layer, e.target)}
+    />
+  );
+};
+
 export const Canvas = ({
   canvasState,
   selectedLayerId,
@@ -23,7 +163,10 @@ export const Canvas = ({
 }: CanvasProps) => {
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
-  const [stageSize, setStageSize] = useState({ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT });
+  const [stageSize, setStageSize] = useState({ 
+    width: previewMode ? PREVIEW_WIDTH : PREVIEW_WIDTH, 
+    height: previewMode ? PREVIEW_HEIGHT : PREVIEW_HEIGHT 
+  });
 
   // Calculate scale factor for preview
   const scale = stageSize.width / CANVAS_WIDTH;
@@ -103,51 +246,11 @@ export const Canvas = ({
     />
   );
 
-  // Render image layer
-  const renderImageLayer = (layer: ImageLayer) => {
-    // Create image element
-    const [image, setImage] = useState<HTMLImageElement | null>(null);
-
-    useEffect(() => {
-      const img = new window.Image();
-      img.crossOrigin = 'anonymous';
-      img.src = layer.src;
-      img.onload = () => setImage(img);
-    }, [layer.src]);
-
-    if (!image) return null;
-
-    return (
-      <KonvaImage
-        key={layer.id}
-        id={layer.id}
-        image={image}
-        x={layer.x * scale}
-        y={layer.y * scale}
-        width={layer.width * scale}
-        height={layer.height * scale}
-        rotation={layer.rotation}
-        opacity={layer.opacity}
-        visible={layer.visible}
-        draggable={!layer.locked && !previewMode}
-        onClick={() => onSelectLayer(layer.id)}
-        onTap={() => onSelectLayer(layer.id)}
-        onDragEnd={(e) => {
-          onUpdateLayer(layer.id, {
-            x: e.target.x() / scale,
-            y: e.target.y() / scale,
-          });
-        }}
-        onTransformEnd={(e) => handleTransformEnd(layer, e.target)}
-      />
-    );
-  };
-
   // Sort layers by z-index
   const sortedLayers = [...canvasState.layers].sort((a, b) => a.zIndex - b.zIndex);
 
   return (
-    <div className="relative bg-muted rounded-lg overflow-hidden">
+    <div className="relative bg-black/40 rounded-xl overflow-hidden border border-white/10 shadow-2xl">
       <Stage
         ref={stageRef}
         width={stageSize.width}
@@ -163,13 +266,25 @@ export const Canvas = ({
             y={0}
             width={stageSize.width}
             height={stageSize.height}
-            fill="#1a1a1a"
+            fill="#0a0a0a"
           />
 
           {/* Render layers */}
           {sortedLayers.map((layer) => {
             if (layer.type === 'text') return renderTextLayer(layer as TextLayer);
-            if (layer.type === 'image') return renderImageLayer(layer as ImageLayer);
+            if (layer.type === 'image') {
+              return (
+                <ImageLayerComponent
+                  key={layer.id}
+                  layer={layer as ImageLayer}
+                  scale={scale}
+                  previewMode={previewMode}
+                  onSelectLayer={onSelectLayer}
+                  onUpdateLayer={onUpdateLayer}
+                  onTransformEnd={handleTransformEnd}
+                />
+              );
+            }
             return null;
           })}
 

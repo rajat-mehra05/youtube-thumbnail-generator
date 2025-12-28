@@ -4,93 +4,91 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { v4 as uuidv4 } from 'uuid';
+import { Card, CardContent } from '@/components/ui/card';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { AIForm } from '@/components/create/AIForm';
-import { ConceptSelector } from '@/components/create/ConceptSelector';
-import { ROUTES } from '@/lib/constants';
+import { AIMagicModal } from '@/components/editor/AIMagicModal';
+import { ROUTES, getCanvasDimensions } from '@/lib/constants';
 import { useUser } from '@/hooks';
-import { generateConcepts } from '@/lib/actions/ai-generation';
-import { createProject, updateProject } from '@/lib/actions/projects';
-import type { TemplateCategory, EmotionType, StylePreference, ConceptData } from '@/types';
-import { LoadingCard } from '@/components/ui/loading-spinner';
-import { ErrorMessage } from '@/components/ui/error-message';
+import { createProject } from '@/lib/actions/projects';
+import type { CanvasState, ImageLayer } from '@/types';
 
 export default function CreateAIPage() {
   const router = useRouter();
   const { user, loading: userLoading } = useUser();
-  const [step, setStep] = useState<'form' | 'select'>('form');
   const [loading, setLoading] = useState(false);
-  const [concepts, setConcepts] = useState<ConceptData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<{
-    videoTitle: string;
-    topic: TemplateCategory;
-    emotion: EmotionType;
-    style: StylePreference;
-  } | null>(null);
 
-  const handleFormSubmit = async (data: {
-    videoTitle: string;
-    topic: TemplateCategory;
-    emotion: EmotionType;
-    style: StylePreference;
-  }) => {
+  const handleBackgroundGenerated = async (backgroundUrl: string) => {
     setLoading(true);
     setError(null);
-    setFormData(data);
 
     try {
-      const result = await generateConcepts({
-        videoTitle: data.videoTitle,
-        topic: data.topic,
-        emotion: data.emotion,
-        style: data.style,
-        userId: user?.id,
-      });
-
-      if (!result.success || !result.concepts) {
-        throw new Error(result.error || 'Failed to generate concepts');
-      }
-
-      setConcepts(result.concepts);
-      setStep('select');
-      toast.success('Concepts generated!');
+      // Create thumbnail project with just the background
+      await createThumbnailProject(backgroundUrl);
     } catch (err) {
-      console.error('Generation error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to generate concepts';
+      console.error('Project creation error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create thumbnail';
       setError(errorMessage);
       toast.error(errorMessage);
-    } finally {
       setLoading(false);
     }
   };
 
-  const handleRegenerate = async () => {
-    if (!formData) return;
-    await handleFormSubmit(formData);
-  };
-
-  const handleSelectConcept = async (concept: ConceptData) => {
-    setLoading(true);
-
+  const createThumbnailProject = async (backgroundUrl: string) => {
     try {
-      // Create a new project
+      // Use default 16:9 dimensions for the canvas
+      const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions('16:9');
+
+      // Build canvas state with just the background layer
+      const layers: ImageLayer[] = [];
+
+      // Add background image layer
+      const bgLayer: ImageLayer = {
+        id: uuidv4(),
+        type: 'image',
+        name: 'Background',
+        x: 0,
+        y: 0,
+        width: canvasWidth,
+        height: canvasHeight,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        opacity: 1,
+        zIndex: 0,
+        visible: true,
+        locked: true,
+        src: backgroundUrl,
+      };
+      layers.push(bgLayer);
+
+      // Create canvas state with background only
+      const canvasState: CanvasState = {
+        width: canvasWidth,
+        height: canvasHeight,
+        layers,
+      };
+
+      // Create project with the background
       const projectResult = await createProject({
-        name: concept.headline || formData?.videoTitle || 'AI Generated Thumbnail',
-        video_title: formData?.videoTitle,
+        name: 'AI Generated Background',
+        video_title: '',
+        canvas_state: canvasState,
       });
 
       if (!projectResult.success || !projectResult.project) {
         throw new Error(projectResult.error || 'Failed to create project');
       }
 
-      // Navigate to editor
+      toast.success('Background created! Opening editor...');
       router.push(ROUTES.EDITOR(projectResult.project.id));
     } catch (error) {
       console.error('Project creation error:', error);
       toast.error('Failed to create project');
+      throw error;
+    } finally {
       setLoading(false);
     }
   };
@@ -117,44 +115,24 @@ export default function CreateAIPage() {
             ← Back to Create
           </Link>
 
-          {/* Step indicator */}
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <div
-              className={`flex items-center gap-2 ${step === 'form' ? 'text-violet-600' : 'text-muted-foreground'
-                }`}
-            >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'form'
-                  ? 'bg-violet-500 text-white'
-                  : 'bg-muted text-muted-foreground'
-                  }`}
-              >
-                1
-              </div>
-              <span className="hidden sm:inline">Describe</span>
-            </div>
-            <div className="w-8 h-px bg-border" />
-            <div
-              className={`flex items-center gap-2 ${step === 'select' ? 'text-violet-600' : 'text-muted-foreground'
-                }`}
-            >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step === 'select'
-                  ? 'bg-violet-500 text-white'
-                  : 'bg-muted text-muted-foreground'
-                  }`}
-              >
-                2
-              </div>
-              <span className="hidden sm:inline">Select</span>
-            </div>
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+              Generate AI Thumbnail
+            </h1>
+            <p className="text-muted-foreground">
+              Describe what you want and let AI create a stunning background
+            </p>
           </div>
 
           {/* Loading State */}
           {loading && (
             <Card>
               <CardContent className="py-12">
-                <LoadingCard message="Generating AI concepts... This may take up to 30 seconds." />
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500 mx-auto mb-4" />
+                  <p className="text-muted-foreground">Creating your thumbnail... This may take up to 30 seconds.</p>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -163,52 +141,30 @@ export default function CreateAIPage() {
           {error && !loading && (
             <Card>
               <CardContent className="py-6">
-                <ErrorMessage
-                  title="Generation Failed"
-                  message={error}
-                  onRetry={() => {
-                    setError(null);
-                    if (formData) handleFormSubmit(formData);
-                  }}
-                />
+                <div className="text-center">
+                  <p className="text-red-500 mb-4">{error}</p>
+                  <button
+                    onClick={() => setError(null)}
+                    className="px-4 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600"
+                  >
+                    Try Again
+                  </button>
+                </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Step 1: Form */}
-          {step === 'form' && !loading && !error && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Tell us about your video</CardTitle>
-                <CardDescription>
-                  Provide details and AI will generate thumbnail concepts for you.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AIForm onSubmit={handleFormSubmit} loading={loading} />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 2: Select Concept */}
-          {step === 'select' && concepts && !loading && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Choose a concept</CardTitle>
-                <CardDescription>
-                  Select the concept you like best. You can customize it in the editor.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ConceptSelector
-                  concepts={concepts}
-                  onSelect={handleSelectConcept}
-                  onRegenerate={handleRegenerate}
-                  loading={loading}
-                />
-              </CardContent>
-            </Card>
-          )}
+          {/* AI Magic Modal */}
+          <AIMagicModal
+            open={!loading && !error}
+            onOpenChange={(open) => {
+              if (!open) {
+                router.push(ROUTES.CREATE);
+              }
+            }}
+            onBackgroundGenerated={handleBackgroundGenerated}
+            userId={user?.id}
+          />
         </div>
       </main>
 

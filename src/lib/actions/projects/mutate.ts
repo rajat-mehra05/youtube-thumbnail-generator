@@ -4,7 +4,11 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Project, CanvasState } from '@/types';
 
-export const createProject = async (data: { name?: string; video_title?: string }): Promise<{ success: boolean; project?: Project; error?: string }> => {
+export const createProject = async (data: {
+  name?: string;
+  video_title?: string;
+  canvas_state?: CanvasState;
+}): Promise<{ success: boolean; project?: Project; error?: string }> => {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -12,7 +16,12 @@ export const createProject = async (data: { name?: string; video_title?: string 
 
     const { data: project, error } = await supabase
       .from('projects')
-      .insert({ user_id: user.id, name: data.name || 'Untitled Project', video_title: data.video_title })
+      .insert({
+        user_id: user.id,
+        name: data.name || 'Untitled Project',
+        video_title: data.video_title,
+        canvas_state: data.canvas_state,
+      })
       .select()
       .single();
 
@@ -98,5 +107,50 @@ export const duplicateProject = async (projectId: string): Promise<{ success: bo
   } catch (error) {
     console.error('Duplicate project error:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Failed to duplicate project' };
+  }
+};
+
+export const bulkDeleteProjects = async (projectIds: string[]): Promise<{ success: boolean; deletedCount?: number; error?: string }> => {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    if (projectIds.length === 0) {
+      return { success: false, error: 'No projects selected' };
+    }
+
+    const { error, count } = await supabase
+      .from('projects')
+      .delete({ count: 'exact' })
+      .in('id', projectIds)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+    revalidatePath('/dashboard');
+    return { success: true, deletedCount: count || 0 };
+  } catch (error) {
+    console.error('Bulk delete projects error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to delete projects' };
+  }
+};
+
+export const deleteAllProjects = async (): Promise<{ success: boolean; deletedCount?: number; error?: string }> => {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    const { error, count } = await supabase
+      .from('projects')
+      .delete({ count: 'exact' })
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+    revalidatePath('/dashboard');
+    return { success: true, deletedCount: count || 0 };
+  } catch (error) {
+    console.error('Delete all projects error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to delete all projects' };
   }
 };
