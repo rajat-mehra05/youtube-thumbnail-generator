@@ -189,9 +189,11 @@ export interface ImageLayer extends BaseLayer {
   cropHeight?: number;
 }
 
+export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'star' | 'arrow' | 'line';
+
 export interface ShapeLayer extends BaseLayer {
   type: 'shape';
-  shapeType: 'rectangle' | 'circle' | 'arrow' | 'line';
+  shapeType: ShapeType;
   fill?: string;
   stroke?: string;
   strokeWidth?: number;

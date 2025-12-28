@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { Stage, Layer, Rect, Text, Image as KonvaImage, Transformer } from 'react-konva';
 import type Konva from 'konva';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, PREVIEW_WIDTH, PREVIEW_HEIGHT } from '@/lib/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from '@/lib/constants';
 import type { CanvasState, CanvasLayer, TextLayer, ImageLayer } from '@/types';
 
 interface CanvasProps {
@@ -39,30 +39,30 @@ const ImageLayerComponent = ({
   useEffect(() => {
     setLoading(true);
     setError(false);
-    
+
     // Check if it's a data URL (base64) - these don't need crossOrigin
     const isDataUrl = layer.src.startsWith('data:');
-    
+
     const img = new window.Image();
-    
+
     // Only set crossOrigin for external URLs, not data URLs
     if (!isDataUrl) {
       img.crossOrigin = 'anonymous';
     }
-    
+
     img.onload = () => {
       setImage(img);
       setLoading(false);
       setError(false);
     };
-    
+
     img.onerror = (e) => {
       console.error('Failed to load image:', {
         src: layer.src.substring(0, 100) + '...',
         isDataUrl,
         error: e,
       });
-      
+
       // If it's not a data URL and crossOrigin failed, try without it
       if (!isDataUrl) {
         console.log('Retrying without crossOrigin...');
@@ -83,9 +83,9 @@ const ImageLayerComponent = ({
         setLoading(false);
       }
     };
-    
+
     img.src = layer.src;
-    
+
     return () => {
       img.onload = null;
       img.onerror = null;
@@ -163,9 +163,9 @@ export const Canvas = ({
 }: CanvasProps) => {
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
-  const [stageSize, setStageSize] = useState({ 
-    width: previewMode ? PREVIEW_WIDTH : PREVIEW_WIDTH, 
-    height: previewMode ? PREVIEW_HEIGHT : PREVIEW_HEIGHT 
+  const [stageSize, setStageSize] = useState({
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT
   });
 
   // Calculate scale factor for preview

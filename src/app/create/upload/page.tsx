@@ -80,8 +80,8 @@ export default function CreateUploadPage() {
       }
 
       // Center the image on canvas
-      const x = (CANVAS_WIDTH - layerWidth) / 2 + layerWidth / 2;
-      const y = (CANVAS_HEIGHT - layerHeight) / 2 + layerHeight / 2;
+      const x = (CANVAS_WIDTH - layerWidth) / 2;
+      const y = (CANVAS_HEIGHT - layerHeight) / 2;
 
       // Create initial canvas state with the uploaded image as background
       const imageLayer: ImageLayer = {

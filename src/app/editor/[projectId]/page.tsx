@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import nextDynamic from 'next/dynamic';
@@ -14,7 +14,7 @@ import { useUser } from '@/hooks';
 import { useCanvasState } from '@/hooks/useCanvasState';
 import { getProject, updateProject } from '@/lib/actions/projects';
 import { createClient } from '@/lib/supabase/client';
-import type { Project, CanvasLayer, ImageLayer } from '@/types';
+import type { Project, CanvasLayer, ImageLayer, ShapeType } from '@/types';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Dynamically import Canvas to avoid SSR issues with Konva
@@ -105,6 +105,30 @@ export default function EditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, userLoading]);
 
+  // Handle save
+  const handleSave = useCallback(async () => {
+    if (!project) return;
+
+    setSaving(true);
+    try {
+      const result = await updateProject(projectId, {
+        name: project.name,
+        canvas_state: canvasState,
+      });
+
+      if (result.success) {
+        toast.success('Project saved!');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save project');
+    } finally {
+      setSaving(false);
+    }
+  }, [project, projectId, canvasState]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -146,36 +170,12 @@ export default function EditorPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo, selectedLayerId, deleteLayer]);
+  }, [undo, redo, selectedLayerId, deleteLayer, handleSave]);
 
   // Handle name change
   const handleNameChange = (name: string) => {
     if (project) {
       setProject({ ...project, name });
-    }
-  };
-
-  // Handle save
-  const handleSave = async () => {
-    if (!project) return;
-
-    setSaving(true);
-    try {
-      const result = await updateProject(projectId, {
-        name: project.name,
-        canvas_state: canvasState,
-      });
-
-      if (result.success) {
-        toast.success('Project saved!');
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error) {
-      console.error('Save error:', error);
-      toast.error('Failed to save project');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -257,7 +257,7 @@ export default function EditorPage() {
   };
 
   // Handle add layer
-  const handleAddLayer = (type: 'text' | 'image' | 'shape') => {
+  const handleAddLayer = (type: 'text' | 'image' | ShapeType) => {
     if (type === 'image') {
       fileInputRef.current?.click();
       return;
@@ -277,7 +277,7 @@ export default function EditorPage() {
       name: `${layer.name} copy`,
     };
 
-    addLayer(layer.type as 'text' | 'image' | 'shape', newLayer);
+    addLayer(layer.type === 'shape' ? (layer as { shapeType: ShapeType }).shapeType : layer.type, newLayer);
     toast.success('Layer duplicated');
   };
 

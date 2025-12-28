@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { Upload, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -168,6 +168,22 @@ export const ReferenceImageField = ({ value, onChange, disabled }: ReferenceImag
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Helper function to safely revoke object URLs
+  const revokePreviewUrl = useCallback((url: string | null) => {
+    if (url && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (preview) {
+        revokePreviewUrl(preview);
+      }
+    };
+  }, [preview, revokePreviewUrl]);
+
   const handleFile = useCallback(async (file: File) => {
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -184,6 +200,11 @@ export const ReferenceImageField = ({ value, onChange, disabled }: ReferenceImag
     setUploading(true);
 
     try {
+      // Revoke the previous preview URL to prevent memory leaks
+      if (preview) {
+        revokePreviewUrl(preview);
+      }
+
       // Create a local preview
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
@@ -197,7 +218,7 @@ export const ReferenceImageField = ({ value, onChange, disabled }: ReferenceImag
     } finally {
       setUploading(false);
     }
-  }, [onChange]);
+  }, [onChange, preview, revokePreviewUrl]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -226,6 +247,11 @@ export const ReferenceImageField = ({ value, onChange, disabled }: ReferenceImag
   };
 
   const handleRemove = () => {
+    // Revoke the current preview URL to prevent memory leaks
+    if (preview) {
+      revokePreviewUrl(preview);
+    }
+
     setPreview(null);
     onChange?.(undefined);
     if (fileInputRef.current) {

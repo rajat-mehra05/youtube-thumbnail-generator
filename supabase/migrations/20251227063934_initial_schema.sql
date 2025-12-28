@@ -246,16 +246,18 @@ CREATE POLICY "Anyone can view templates"
   USING (true);
 
 -- Guest sessions policies (service role only for security)
+-- Service role bypasses RLS entirely, so we deny access to regular users
 CREATE POLICY "Service role can manage guest sessions"
   ON public.guest_sessions FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  USING (false)
+  WITH CHECK (false);
 
 -- Cache entries policies (service role only)
+-- Service role bypasses RLS entirely, so we deny access to regular users
 CREATE POLICY "Service role can manage cache"
   ON public.cache_entries FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  USING (false)
+  WITH CHECK (false);
 
 -- Usage logs policies
 CREATE POLICY "Users can view their own usage"
@@ -363,6 +365,32 @@ CREATE POLICY "Users can view their uploads"
 CREATE POLICY "Users can delete their uploads"
   ON storage.objects FOR DELETE
   USING (bucket_id = 'user-uploads' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Storage policies for generated-images bucket
+CREATE POLICY "Users can upload generated images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'generated-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can view their generated images"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'generated-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete their generated images"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'generated-images' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+-- Storage policies for exports bucket
+CREATE POLICY "Users can upload to their exports folder"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'exports' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can view their exports"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'exports' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete their exports"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'exports' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 -- ============================================
 -- SYNC EXISTING USERS

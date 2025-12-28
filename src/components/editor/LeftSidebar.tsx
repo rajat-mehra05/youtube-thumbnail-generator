@@ -13,11 +13,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import type { ShapeType } from '@/types';
 
 type SidebarTab = 'elements' | 'text' | 'uploads' | 'templates' | 'ai' | null;
 
 interface LeftSidebarProps {
-  onAddLayer: (type: 'text' | 'image' | 'shape') => void;
+  onAddLayer: (type: 'text' | 'image' | ShapeType) => void;
   onOpenTemplates?: () => void;
   onOpenAI?: () => void;
 }
@@ -103,7 +104,6 @@ export const LeftSidebar = ({
             {activeTab === 'templates' && (
               <TemplatesPanel onOpenTemplates={onOpenTemplates} />
             )}
-            {activeTab === 'ai' && <AIPanel onOpenAI={onOpenAI} />}
           </div>
         </div>
       )}
@@ -115,7 +115,7 @@ export const LeftSidebar = ({
 const ElementsPanel = ({
   onAddLayer,
 }: {
-  onAddLayer: (type: 'text' | 'image' | 'shape') => void;
+  onAddLayer: (type: 'text' | 'image' | ShapeType) => void;
 }) => (
   <div className="space-y-6">
     {/* Shapes Section */}
@@ -132,7 +132,7 @@ const ElementsPanel = ({
         ].map((item) => (
           <button
             key={item.shape}
-            onClick={() => onAddLayer('shape')}
+            onClick={() => onAddLayer(item.shape as ShapeType)}
             className="aspect-square rounded-xl border border-border bg-muted/30 hover:bg-muted hover:border-violet-500/50 transition-all flex flex-col items-center justify-center gap-1 group"
           >
             <span className="text-2xl group-hover:scale-110 transition-transform">
@@ -162,7 +162,7 @@ const ElementsPanel = ({
           <span className="text-sm">Add Image</span>
         </button>
         <button
-          onClick={() => onAddLayer('shape')}
+          onClick={() => onAddLayer('rectangle')}
           className="p-4 rounded-xl border border-dashed border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all flex flex-col items-center gap-2"
         >
           <LayoutGrid className="w-8 h-8 text-muted-foreground" />
@@ -177,7 +177,7 @@ const ElementsPanel = ({
 const TextPanel = ({
   onAddLayer,
 }: {
-  onAddLayer: (type: 'text' | 'image' | 'shape') => void;
+  onAddLayer: (type: 'text' | 'image' | ShapeType) => void;
 }) => (
   <div className="space-y-4">
     <p className="text-sm text-muted-foreground">
@@ -249,7 +249,7 @@ const TextPanel = ({
 const UploadsPanel = ({
   onAddLayer,
 }: {
-  onAddLayer: (type: 'text' | 'image' | 'shape') => void;
+  onAddLayer: (type: 'text' | 'image' | ShapeType) => void;
 }) => (
   <div className="space-y-4">
     <Button
@@ -318,52 +318,4 @@ const TemplatesPanel = ({
   </div>
 );
 
-// AI Panel
-const AIPanel = ({ onOpenAI }: { onOpenAI?: () => void }) => (
-  <div className="space-y-4">
-    <div className="p-4 rounded-xl bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20">
-      <div className="flex items-center gap-2 mb-2">
-        <Sparkles className="w-5 h-5 text-violet-500" />
-        <h3 className="font-semibold">AI Magic</h3>
-      </div>
-      <p className="text-sm text-muted-foreground mb-3">
-        Generate thumbnails with AI based on your video title and style
-        preferences.
-      </p>
-      <Button
-        onClick={onOpenAI}
-        className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700"
-      >
-        Generate with AI
-      </Button>
-    </div>
-
-    <Separator />
-
-    <div>
-      <h3 className="text-sm font-medium mb-3 text-muted-foreground">
-        AI Features
-      </h3>
-      <div className="space-y-2">
-        {[
-          { icon: '🎨', label: 'Background Generation', desc: 'AI backgrounds' },
-          { icon: '✨', label: 'Style Transfer', desc: 'Apply styles' },
-          { icon: '🔤', label: 'Text Suggestions', desc: 'Catchy headlines' },
-        ].map((feature) => (
-          <button
-            key={feature.label}
-            onClick={onOpenAI}
-            className="w-full p-3 rounded-lg border border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all text-left flex items-center gap-3"
-          >
-            <span className="text-xl">{feature.icon}</span>
-            <div>
-              <p className="text-sm font-medium">{feature.label}</p>
-              <p className="text-xs text-muted-foreground">{feature.desc}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  </div>
-);
 

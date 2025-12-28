@@ -1,20 +1,8 @@
 import type { Metadata } from 'next';
-import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
+import { spaceGrotesk, jetbrainsMono, inter, montserrat, poppins, roboto, openSans, oswald, bebasNeue, anton, bangers } from '@/lib/fonts';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
-
-const spaceGrotesk = Space_Grotesk({
-  variable: '--font-sans',
-  subsets: ['latin'],
-  display: 'swap',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: '--font-mono',
-  subsets: ['latin'],
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: {
@@ -58,7 +46,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
+        className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} ${inter.variable} ${montserrat.variable} ${poppins.variable} ${roboto.variable} ${openSans.variable} ${oswald.variable} ${bebasNeue.variable} ${anton.variable} ${bangers.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
       >
         <Providers>{children}</Providers>
       </body>

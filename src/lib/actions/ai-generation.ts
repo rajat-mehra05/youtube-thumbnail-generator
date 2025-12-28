@@ -40,11 +40,33 @@ export const generateConcepts = async (
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const prompt = buildConceptPrompt(input);
     const result = await model.generateContent(prompt);
-    const text = (await result.response).text();
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error('Failed to parse AI response');
+    const text = (await result.response).text().trim();
 
-    const concepts = JSON.parse(jsonMatch[0]) as ConceptData[];
+    let concepts: ConceptData[];
+
+    // First try to parse as JSON array
+    const arrayMatch = text.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      try {
+        concepts = JSON.parse(arrayMatch[0]) as ConceptData[];
+      } catch (error) {
+        throw new Error('Failed to parse AI response as JSON array');
+      }
+    } else {
+      // If no array found, try to parse as single JSON object
+      const objectMatch = text.match(/\{[\s\S]*\}/);
+      if (objectMatch) {
+        try {
+          const singleConcept = JSON.parse(objectMatch[0]) as ConceptData;
+          concepts = [singleConcept];
+        } catch (error) {
+          throw new Error('Failed to parse AI response as JSON object');
+        }
+      } else {
+        throw new Error('No valid JSON found in AI response');
+      }
+    }
+
     await storeInCache(cacheKey, 'llm_response', concepts, 24);
     return { success: true, concepts };
   } catch (error) {

@@ -50,63 +50,71 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================
 
 -- Policies for user-uploads bucket
+DROP POLICY IF EXISTS "Users can upload to their folder" ON storage.objects;
 CREATE POLICY "Users can upload to their folder"
   ON storage.objects FOR INSERT
   WITH CHECK (
-    bucket_id = 'user-uploads' 
+    bucket_id = 'user-uploads'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
+DROP POLICY IF EXISTS "Users can view their uploads" ON storage.objects;
 CREATE POLICY "Users can view their uploads"
   ON storage.objects FOR SELECT
   USING (
-    bucket_id = 'user-uploads' 
+    bucket_id = 'user-uploads'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
+DROP POLICY IF EXISTS "Users can update their uploads" ON storage.objects;
 CREATE POLICY "Users can update their uploads"
   ON storage.objects FOR UPDATE
   USING (
-    bucket_id = 'user-uploads' 
+    bucket_id = 'user-uploads'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
+DROP POLICY IF EXISTS "Users can delete their uploads" ON storage.objects;
 CREATE POLICY "Users can delete their uploads"
   ON storage.objects FOR DELETE
   USING (
-    bucket_id = 'user-uploads' 
+    bucket_id = 'user-uploads'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
 -- Policies for generated-images bucket (public bucket but with upload restrictions)
+DROP POLICY IF EXISTS "Anyone can view generated images" ON storage.objects;
 CREATE POLICY "Anyone can view generated images"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'generated-images');
 
+DROP POLICY IF EXISTS "Authenticated users can upload generated images" ON storage.objects;
 CREATE POLICY "Authenticated users can upload generated images"
   ON storage.objects FOR INSERT
   WITH CHECK (
-    bucket_id = 'generated-images' 
+    bucket_id = 'generated-images'
     AND (
       auth.uid()::text = (storage.foldername(name))[1]
       OR (storage.foldername(name))[1] LIKE 'guest%'
     )
   );
 
+DROP POLICY IF EXISTS "Users can update their generated images" ON storage.objects;
 CREATE POLICY "Users can update their generated images"
   ON storage.objects FOR UPDATE
   USING (
-    bucket_id = 'generated-images' 
+    bucket_id = 'generated-images'
     AND (
       auth.uid()::text = (storage.foldername(name))[1]
       OR (storage.foldername(name))[1] LIKE 'guest%'
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete their generated images" ON storage.objects;
 CREATE POLICY "Users can delete their generated images"
   ON storage.objects FOR DELETE
   USING (
-    bucket_id = 'generated-images' 
+    bucket_id = 'generated-images'
     AND (
       auth.uid()::text = (storage.foldername(name))[1]
       OR (storage.foldername(name))[1] LIKE 'guest%'
@@ -114,28 +122,32 @@ CREATE POLICY "Users can delete their generated images"
   );
 
 -- Policies for exports bucket
+DROP POLICY IF EXISTS "Users can upload to their exports folder" ON storage.objects;
 CREATE POLICY "Users can upload to their exports folder"
   ON storage.objects FOR INSERT
   WITH CHECK (
-    bucket_id = 'exports' 
+    bucket_id = 'exports'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
+DROP POLICY IF EXISTS "Users can view their exports" ON storage.objects;
 CREATE POLICY "Users can view their exports"
   ON storage.objects FOR SELECT
   USING (
-    bucket_id = 'exports' 
+    bucket_id = 'exports'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
+DROP POLICY IF EXISTS "Users can delete their exports" ON storage.objects;
 CREATE POLICY "Users can delete their exports"
   ON storage.objects FOR DELETE
   USING (
-    bucket_id = 'exports' 
+    bucket_id = 'exports'
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
 -- Policies for templates bucket (public bucket, admin-managed)
+DROP POLICY IF EXISTS "Anyone can view templates" ON storage.objects;
 CREATE POLICY "Anyone can view templates"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'templates');

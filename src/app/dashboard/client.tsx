@@ -27,12 +27,6 @@ export const DashboardClient = ({ initialProjects }: DashboardClientProps) => {
     }
   }, [transferred, projectId]);
 
-  // Exit selection mode when all projects are deselected
-  useEffect(() => {
-    if (selectionMode && selectedProjects.size === 0 && projects.length > 0) {
-      // Don't auto-exit if user just deleted all selected projects
-    }
-  }, [selectedProjects, selectionMode, projects.length]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
