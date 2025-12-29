@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useLayoutEffect, startTransition } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -22,14 +23,23 @@ interface NavbarProps {
   generationsRemaining?: number;
 }
 
-export const Navbar = ({
-  user,
-  showGuestBanner = false,
-  generationsRemaining = 1,
-}: NavbarProps) => {
-  const pathname = usePathname();
+// Client-only user menu component to prevent hydration mismatches
+const UserMenu = ({ user }: { user: User }) => {
+  const mountedRef = useRef(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+
+  // Mark as mounted after initial render to prevent hydration mismatches
+  // Use startTransition to defer state update, satisfying linter requirement
+  useLayoutEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      startTransition(() => {
+        setMounted(true);
+      });
+    }
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -52,6 +62,85 @@ export const Navbar = ({
     return 'U';
   };
 
+  // Don't render until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <Button
+        variant="ghost"
+        className="relative cursor-pointer size-9 rounded-full"
+        aria-label="User menu"
+        disabled
+      >
+        <Avatar className="size-9">
+          <AvatarFallback className="bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white text-sm">
+            U
+          </AvatarFallback>
+        </Avatar>
+      </Button>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="relative cursor-pointer size-9 rounded-full"
+          aria-label="User menu"
+        >
+          <Avatar className="size-9">
+            <AvatarImage
+              src={user.avatar_url}
+              alt={user.full_name || user.email}
+            />
+            <AvatarFallback className="bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white text-sm">
+              {getInitials(user.full_name, user.email)}
+            </AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="flex items-center gap-2 p-2">
+          <Avatar className="size-8 cursor-pointer">
+            <AvatarImage
+              src={user.avatar_url}
+              alt={user.full_name || user.email}
+            />
+            <AvatarFallback className="bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white text-xs">
+              {getInitials(user.full_name, user.email)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">
+              {user.full_name || 'User'}
+            </span>
+            <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+              {user.email}
+            </span>
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href={ROUTES.DASHBOARD}>My Projects</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={handleSignOut}
+          className="text-red-600 focus:text-red-600"
+        >
+          Sign Out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+export const Navbar = ({
+  user,
+  showGuestBanner = false,
+  generationsRemaining = 1,
+}: NavbarProps) => {
+  const pathname = usePathname();
   const isLandingPage = pathname === '/';
 
   return (
@@ -82,95 +171,38 @@ export const Navbar = ({
                 <Button
                   variant={pathname === '/dashboard' ? 'secondary' : 'ghost'}
                   size="sm"
+                  className="cursor-pointer"
                 >
                   Dashboard
                 </Button>
               </Link>
-              <Link href={ROUTES.CREATE}>
-                <Button
-                  size="sm"
-                  className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
-                >
-                  + Create New
-                </Button>
-              </Link>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative size-9 rounded-full"
-                    aria-label="User menu"
-                  >
-                    <Avatar className="size-9">
-                      <AvatarImage
-                        src={user.avatar_url}
-                        alt={user.full_name || user.email}
-                      />
-                      <AvatarFallback className="bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white text-sm">
-                        {getInitials(user.full_name, user.email)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="flex items-center gap-2 p-2">
-                    <Avatar className="size-8">
-                      <AvatarImage
-                        src={user.avatar_url}
-                        alt={user.full_name || user.email}
-                      />
-                      <AvatarFallback className="bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white text-xs">
-                        {getInitials(user.full_name, user.email)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">
-                        {user.full_name || 'User'}
-                      </span>
-                      <span className="text-xs text-muted-foreground truncate max-w-[180px]">
-                        {user.email}
-                      </span>
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href={ROUTES.DASHBOARD}>My Projects</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleSignOut}
-                    className="text-red-600 focus:text-red-600"
-                  >
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <UserMenu user={user} />
             </>
           ) : (
             <>
               {!isLandingPage && (
                 <>
                   <Link href={ROUTES.LOGIN}>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="cursor-pointer">
                       Login
                     </Button>
                   </Link>
                   <Link href={ROUTES.LOGIN}>
-                    <Button size="sm">Sign Up</Button>
+                    <Button size="sm" className="cursor-pointer">Sign Up</Button>
                   </Link>
                 </>
               )}
               {isLandingPage && (
                 <>
                   <Link href={ROUTES.LOGIN}>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="cursor-pointer">
                       Login
                     </Button>
                   </Link>
                   <Link href={ROUTES.LOGIN}>
                     <Button
                       size="sm"
-                      className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
+                      className="cursor-pointer bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
                     >
                       Sign Up
                     </Button>

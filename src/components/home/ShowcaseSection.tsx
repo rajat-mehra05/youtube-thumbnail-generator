@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 const exampleThumbnails = [
   { id: 1, title: 'Gaming', image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=225&fit=crop' },
   { id: 2, title: 'Vlog', image: 'https://images.unsplash.com/photo-1611162616475-46b635cb6868?w=400&h=225&fit=crop' },
@@ -21,10 +23,12 @@ export const ShowcaseSection = () => (
             className="group relative aspect-video rounded-xl overflow-hidden bg-muted shadow-lg"
             style={{ animationDelay: `${index * 100}ms` }}
           >
-            <img
+            <Image
               src={thumb.image}
               alt={`${thumb.title} thumbnail example`}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              unoptimized
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="absolute bottom-3 left-3 text-white font-semibold opacity-0 group-hover:opacity-100 transition-opacity">

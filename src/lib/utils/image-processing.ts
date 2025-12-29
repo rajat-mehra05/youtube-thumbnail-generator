@@ -37,7 +37,7 @@ export const compressImageBuffer = async (buffer: Buffer, quality: number = 85):
         mimeType: 'image/jpeg',
       };
     }
-  } catch (compressionError) {
+  } catch {
     logger.warn('Sharp compression failed, using original buffer');
   }
 

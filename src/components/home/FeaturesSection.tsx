@@ -1,6 +1,5 @@
 const features = [
-  { icon: '✨', title: 'AI-Powered Generation', description: 'Describe your video and let AI create stunning thumbnail concepts in seconds.' },
-  { icon: '🎨', title: '50+ Templates', description: 'Choose from professionally designed templates for every niche - gaming, vlogs, tutorials & more.' },
+  { icon: '✨', title: 'AI-Powered Generation', description: 'Describe your thumbnail and let AI create stunning thumbnail in seconds.' },
   { icon: '🖌️', title: 'Easy Canvas Editor', description: 'Drag, drop, resize, and customize every element. No design skills needed.' },
   { icon: '📤', title: 'Upload Your Images', description: 'Use your own photos, logos, and screenshots. AI enhances them automatically.' },
   { icon: '⚡', title: 'Instant Export', description: 'Export YouTube-ready thumbnails at 1280x720 with one click.' },

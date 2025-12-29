@@ -57,7 +57,7 @@ export const Toolbar = ({
         ) : (
           <button
             onClick={() => setEditing(true)}
-            className="flex items-center gap-1 text-sm font-medium hover:text-violet-500 transition-colors"
+            className="flex items-center gap-1 text-sm font-medium hover:text-violet-500 transition-colors cursor-pointer"
           >
             {projectName}
             <span className="text-muted-foreground">✏️</span>

@@ -12,16 +12,6 @@ export const CANVAS_ASPECT_RATIO = CANVAS_WIDTH / CANVAS_HEIGHT;
 export const PREVIEW_WIDTH = 1024;
 export const PREVIEW_HEIGHT = 576;
 
-// Template categories with labels
-export const TEMPLATE_CATEGORIES = [
-  { value: 'gaming', label: 'Gaming' },
-  { value: 'vlog', label: 'Vlog / Lifestyle' },
-  { value: 'tutorial', label: 'Tutorial / How-to' },
-  { value: 'podcast', label: 'Podcast / Interview' },
-  { value: 'reaction', label: 'Reaction / Commentary' },
-  { value: 'business', label: 'Business / Marketing' },
-] as const;
-
 // Emotions with labels
 export const EMOTIONS = [
   { value: 'excited', label: 'Excited', emoji: '🤩' },
@@ -29,15 +19,6 @@ export const EMOTIONS = [
   { value: 'curious', label: 'Curious', emoji: '🤔' },
   { value: 'happy', label: 'Happy', emoji: '😊' },
   { value: 'serious', label: 'Serious', emoji: '😐' },
-] as const;
-
-// Style preferences
-export const STYLE_PREFERENCES = [
-  { value: 'bold_text', label: 'Bold Text' },
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'colorful', label: 'Colorful' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'professional', label: 'Professional' },
 ] as const;
 
 // Image styles for AI generation
@@ -141,8 +122,6 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   CREATE: '/create',
   CREATE_AI: '/create/ai',
-  CREATE_UPLOAD: '/create/upload',
-  CREATE_TEMPLATES: '/create/templates',
   EDITOR: (projectId: string) => `/editor/${projectId}`,
 } as const;
 

@@ -18,15 +18,23 @@ import { AI_DEFAULTS } from '@/lib/constants/ai-constants';
 export const buildThumbnailPrompt = (
     userPrompt: string,
     imageStyle: ImageStyle = AI_DEFAULTS.IMAGE_STYLE,
-    emotion: EmotionType = AI_DEFAULTS.EMOTION
+    emotion: EmotionType = AI_DEFAULTS.EMOTION,
+    hasReferenceImage: boolean = false
 ): string => {
     const styleInstructions = STYLE_VISUAL_INSTRUCTIONS[imageStyle] || STYLE_VISUAL_INSTRUCTIONS.auto;
     const emotionInstructions = EMOTION_ATMOSPHERE_INSTRUCTIONS[emotion] || EMOTION_ATMOSPHERE_INSTRUCTIONS.excited;
 
-    return BASE_THUMBNAIL_PROMPT
+    let prompt = BASE_THUMBNAIL_PROMPT
         .replace('{userPrompt}', userPrompt)
         .replace('{styleInstructions}', styleInstructions)
         .replace('{emotionInstructions}', emotionInstructions);
+
+    // Add reference image instruction if provided
+    if (hasReferenceImage) {
+        prompt += ' IMPORTANT: Use visual elements and style inspiration that could be inspired by the provided reference imagery while maintaining composition and text placement suitable for a YouTube thumbnail.';
+    }
+
+    return prompt;
 };
 
 /**

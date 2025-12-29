@@ -95,20 +95,6 @@ export const getRemainingGenerations = (): number => {
 };
 
 /**
- * Store the generated image URL for transfer on signup
- */
-export const storeGeneratedImage = (imageUrl: string): void => {
-  const session = getGuestSession();
-  if (!session) return;
-
-  session.generatedImageUrl = imageUrl;
-
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(session));
-  }
-};
-
-/**
  * Get the session ID for server-side operations
  */
 export const getGuestSessionId = (): string | null => {
@@ -123,12 +109,4 @@ export const clearGuestSession = (): void => {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(GUEST_SESSION_KEY);
   }
-};
-
-/**
- * Check if user is in guest mode (has a session but not authenticated)
- */
-export const isGuestMode = (): boolean => {
-  const session = getGuestSession();
-  return session !== null;
 };

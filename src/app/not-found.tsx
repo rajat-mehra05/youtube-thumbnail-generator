@@ -33,7 +33,7 @@ export default function NotFound() {
                 <div className="space-y-3">
                     <h1 className="text-3xl md:text-4xl font-bold">Page Not Found</h1>
                     <p className="text-muted-foreground max-w-md mx-auto">
-                        Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.
+                        Sorry, we couldn&apos;t find the page you&apos;re looking for. It might have been moved or deleted.
                     </p>
                 </div>
 
@@ -66,11 +66,6 @@ export default function NotFound() {
                         <Link href={ROUTES.CREATE}>
                             <Button variant="ghost" size="sm">
                                 Create
-                            </Button>
-                        </Link>
-                        <Link href={ROUTES.CREATE_TEMPLATES}>
-                            <Button variant="ghost" size="sm">
-                                Templates
                             </Button>
                         </Link>
                     </div>

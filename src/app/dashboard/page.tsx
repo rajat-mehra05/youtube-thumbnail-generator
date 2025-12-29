@@ -1,9 +1,6 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { ProjectGrid } from '@/components/dashboard/ProjectGrid';
 import { ROUTES } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/server';
 import { getProjects } from '@/lib/actions/projects';

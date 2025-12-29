@@ -39,8 +39,15 @@ const ImageLayerComponent = ({
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    setError(false);
+    let isMounted = true;
+
+    // Reset loading/error when src changes (deferred to avoid synchronous setState)
+    const resetTimeoutId = setTimeout(() => {
+      if (isMounted) {
+        setLoading(true);
+        setError(false);
+      }
+    }, 0);
 
     // Check if it's a data URL (base64) - these don't need crossOrigin
     const isDataUrl = layer.src.startsWith('data:');
@@ -53,12 +60,16 @@ const ImageLayerComponent = ({
     }
 
     img.onload = () => {
-      setImage(img);
-      setLoading(false);
-      setError(false);
+      if (isMounted) {
+        setImage(img);
+        setLoading(false);
+        setError(false);
+      }
     };
 
     img.onerror = (e) => {
+      if (!isMounted) return;
+
       logger.error('Failed to load image:', {
         src: truncateUrl(layer.src),
         isDataUrl,
@@ -70,25 +81,33 @@ const ImageLayerComponent = ({
         logger.debug('Retrying without crossOrigin...');
         const fallbackImg = new window.Image();
         fallbackImg.onload = () => {
-          setImage(fallbackImg);
-          setLoading(false);
-          setError(false);
+          if (isMounted) {
+            setImage(fallbackImg);
+            setLoading(false);
+            setError(false);
+          }
         };
         fallbackImg.onerror = () => {
-          logger.error('Fallback also failed. Image cannot be loaded.');
-          setError(true);
-          setLoading(false);
+          if (isMounted) {
+            logger.error('Fallback also failed. Image cannot be loaded.');
+            setError(true);
+            setLoading(false);
+          }
         };
         fallbackImg.src = layer.src;
       } else {
-        setError(true);
-        setLoading(false);
+        if (isMounted) {
+          setError(true);
+          setLoading(false);
+        }
       }
     };
 
     img.src = layer.src;
 
     return () => {
+      clearTimeout(resetTimeoutId);
+      isMounted = false;
       img.onload = null;
       img.onerror = null;
     };
@@ -165,7 +184,7 @@ export const Canvas = ({
 }: CanvasProps) => {
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
-  const [stageSize, setStageSize] = useState({
+  const [stageSize] = useState({
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT
   });

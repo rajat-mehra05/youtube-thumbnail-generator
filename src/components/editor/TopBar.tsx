@@ -8,8 +8,6 @@ import {
   Download,
   Undo2,
   Redo2,
-  ZoomIn,
-  ZoomOut,
   Bold,
   Italic,
   AlignLeft,
@@ -104,7 +102,7 @@ export const TopBar = ({
         ) : (
           <button
             onClick={() => setEditingName(true)}
-            className="px-2 py-1 rounded hover:bg-muted transition-colors text-sm font-medium truncate max-w-[150px]"
+            className="px-2 py-1 rounded hover:bg-muted transition-colors text-sm font-medium truncate max-w-[150px] cursor-pointer"
           >
             {projectName}
           </button>
@@ -270,7 +268,7 @@ export const TopBar = ({
                           onClick={() =>
                             onUpdateLayer(textLayer.id, { fill: color })
                           }
-                          className={`w-6 h-6 rounded border-2 transition-all ${
+                          className={`w-6 h-6 rounded border-2 transition-all cursor-pointer ${
                             textLayer.fill === color
                               ? 'border-violet-500 scale-110'
                               : 'border-transparent hover:scale-105'

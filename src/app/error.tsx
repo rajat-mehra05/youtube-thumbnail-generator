@@ -41,7 +41,7 @@ export default function Error({
                     <div className="space-y-3">
                         <h1 className="text-3xl md:text-4xl font-bold">Oops! Something went wrong</h1>
                         <p className="text-muted-foreground max-w-md mx-auto">
-                            We encountered an unexpected error. Don't worry, it's not your fault!
+                            We encountered an unexpected error. Don&apos;t worry, it&apos;s not your fault!
                         </p>
 
                         {process.env.NODE_ENV === 'development' && (
