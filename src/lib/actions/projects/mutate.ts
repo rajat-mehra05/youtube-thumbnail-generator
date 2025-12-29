@@ -84,7 +84,7 @@ export const deleteProject = async (projectId: string): Promise<{ success: boole
   }
 };
 
-export const duplicateProject = async (projectId: string): Promise<{ success: boolean; project?: Project; error?: string }> => {
+export const duplicateProject = async (projectId: string): Promise<{ success: boolean; data?: Project; error?: string }> => {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -110,7 +110,7 @@ export const duplicateProject = async (projectId: string): Promise<{ success: bo
 
     if (createError) throw createError;
     revalidatePath('/dashboard');
-    return { success: true, project: project as Project };
+    return { success: true, data: project as Project };
   } catch (error) {
     logger.error('Duplicate project error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to duplicate project' };
