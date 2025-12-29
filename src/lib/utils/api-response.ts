@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { extractErrorMessage, isError } from '@/lib/utils/error-handling';
 import type { ApiResponse, ApiSuccess, ApiFailure } from '@/types/api';
+import { isApiSuccess, isApiFailure } from '@/types/api';
 
 /**
  * API response handling utilities
@@ -21,14 +22,17 @@ export const handleApiResponse = <T>(
 ): boolean => {
   const { onSuccess, onError, successMessage, showToast = true } = options;
 
-  if (response.success) {
+  if (isApiSuccess(response)) {
     if (successMessage && showToast) {
       toast.success(successMessage);
     }
-    onSuccess?.(response.data as T);
+    onSuccess?.(response.data);
     return true;
   } else {
-    const errorMessage = response.error || 'An error occurred';
+    // Handle both explicit failures and success responses with missing data
+    const errorMessage = isApiFailure(response)
+      ? response.error
+      : 'Success response received but data is missing';
     if (showToast) {
       toast.error(errorMessage);
     }

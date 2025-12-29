@@ -22,7 +22,7 @@ export const truncateUrl = (url: string, maxLength: number = 100): string => {
  */
 export const capitalize = (str: string): string => {
     if (!str) return str;
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
 /**
@@ -71,10 +71,18 @@ export const padNumber = (num: number, width: number): string => {
  * Extract initials from a name
  */
 export const getInitials = (name: string): string => {
-    return name
-        .split(' ')
-        .map(word => word.charAt(0))
-        .join('')
-        .toUpperCase()
-        .substring(0, 2);
+    const trimmed = name.trim();
+    if (!trimmed) return '';
+
+    const words = trimmed.split(/\s+/).filter(word => word.length > 0);
+
+    if (words.length === 0) return '';
+
+    if (words.length === 1) {
+        // For single-word names, return first two characters
+        return words[0].substring(0, 2).toUpperCase();
+    }
+
+    // For names with 2+ words, return first character of first two words
+    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
 };

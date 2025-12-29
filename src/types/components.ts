@@ -184,39 +184,3 @@ export interface DashboardClientProps {
   initialProjects: Project[];
 }
 
-export interface CreateAIPageProps {
-  // Add specific props if needed
-}
-
-export interface CreateUploadPageProps {
-  // Add specific props if needed
-}
-
-export interface EditorPageProps {
-  params: {
-    projectId: string;
-  };
-}
-
-// Common component prop patterns
-export interface BaseComponentProps {
-  className?: string;
-  children?: React.ReactNode;
-  disabled?: boolean;
-}
-
-export interface LoadingProps extends BaseComponentProps {
-  size?: 'sm' | 'md' | 'lg';
-  text?: string;
-}
-
-export interface ErrorMessageProps extends BaseComponentProps {
-  error: string;
-  onRetry?: () => void;
-}
-
-// Event handler types
-export type FormEventHandler = (e: React.FormEvent) => void;
-export type ChangeEventHandler = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
-export type ClickEventHandler = (e: React.MouseEvent) => void;
-export type KeyboardEventHandler = (e: React.KeyboardEvent) => void;

@@ -64,11 +64,6 @@ export const EmotionSelect = ({ value, onChange, disabled }: EmotionSelectProps)
   </div>
 );
 
-interface StyleSelectProps {
-  value: StylePreference | '';
-  onChange: (value: StylePreference | '') => void;
-  disabled?: boolean;
-}
 
 export const StyleSelect = ({ value, onChange, disabled }: StyleSelectProps) => (
   <div className="space-y-2">
@@ -84,18 +79,8 @@ export const StyleSelect = ({ value, onChange, disabled }: StyleSelectProps) => 
   </div>
 );
 
-interface ReferenceImageFieldProps {
-  value?: string;
-  onChange?: (url: string | undefined) => void;
-  disabled?: boolean;
-}
 
 // Image Style Selector
-interface ImageStyleSelectProps {
-  value: ImageStyle;
-  onChange: (value: ImageStyle) => void;
-  disabled?: boolean;
-}
 
 export const ImageStyleSelect = ({ value, onChange, disabled }: ImageStyleSelectProps) => (
   <div className="space-y-3">
@@ -128,11 +113,6 @@ export const ImageStyleSelect = ({ value, onChange, disabled }: ImageStyleSelect
 );
 
 // Aspect Ratio Selector
-interface AspectRatioSelectProps {
-  value: AspectRatio;
-  onChange: (value: AspectRatio) => void;
-  disabled?: boolean;
-}
 
 export const AspectRatioSelect = ({ value, onChange, disabled }: AspectRatioSelectProps) => (
   <div className="space-y-3">

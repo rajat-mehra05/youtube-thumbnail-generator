@@ -4,8 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { generateProjectId } from '@/lib/utils/id-generator';
-import { handleApiResponse, handleAsyncApiCall } from '@/lib/utils/api-response';
+import { generateImageId } from '@/lib/utils/id-generator';
+import { handleAsyncApiCall } from '@/lib/utils/api-response';
 import { Card, CardContent } from '@/components/ui/card';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -37,7 +37,7 @@ export default function CreateAIPage() {
 
         // Add background image layer
         const bgLayer: ImageLayer = {
-          id: generateProjectId(),
+          id: generateImageId(),
           type: 'image',
           name: 'Background',
           x: 0,

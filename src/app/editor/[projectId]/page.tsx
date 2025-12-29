@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import nextDynamic from 'next/dynamic';
-import { generateProjectId } from '@/lib/utils/id-generator';
+import { generateImageId } from '@/lib/utils/id-generator';
 import { logger } from '@/lib/utils/logger';
 import { LeftSidebar } from '@/components/editor/LeftSidebar';
 import { TopBar } from '@/components/editor/TopBar';
@@ -15,7 +15,7 @@ import { useUser } from '@/hooks';
 import { useCanvasState } from '@/hooks/useCanvasState';
 import { getProject, updateProject } from '@/lib/actions/projects';
 import { createClient } from '@/lib/supabase/client';
-import type { Project, CanvasLayer, ImageLayer, ShapeType } from '@/types';
+import type { Project, ImageLayer, ShapeType } from '@/types';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Dynamically import Canvas to avoid SSR issues with Konva
@@ -301,7 +301,7 @@ export default function EditorPage() {
     } else {
       // Add new background layer
       const newBgLayer: Partial<ImageLayer> = {
-        id: generateProjectId(),
+        id: generateImageId(),
         type: 'image',
         name: 'AI Background',
         x: 0,

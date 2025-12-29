@@ -50,14 +50,3 @@ export const isValidEmail = (email: string): boolean => {
     return emailRegex.test(email);
 };
 
-/**
- * Validate URL format
- */
-export const isValidUrl = (url: string): boolean => {
-    try {
-        new URL(url);
-        return true;
-    } catch {
-        return false;
-    }
-};
