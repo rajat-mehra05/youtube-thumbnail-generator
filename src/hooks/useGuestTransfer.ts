@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/utils/logger';
 import { getGuestSessionId, clearGuestSession } from '@/lib/guest-session';
 import { transferGuestDataToUser } from '@/lib/actions/guest-session';
 import { ROUTES } from '@/lib/constants';
@@ -49,7 +50,7 @@ export const useGuestTransfer = () => {
           }
         }
       } catch (error) {
-        console.error('Guest transfer error:', error);
+        logger.error('Guest transfer error:', { error });
       } finally {
         setTransferring(false);
       }

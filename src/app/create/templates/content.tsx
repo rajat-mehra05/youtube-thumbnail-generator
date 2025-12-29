@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { logger } from '@/lib/utils/logger';
 import { Input } from '@/components/ui/input';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -47,7 +48,7 @@ export function TemplatesContent() {
           setError(result.error || 'Failed to load templates');
         }
       } catch (err) {
-        console.error('Failed to fetch templates:', err);
+        logger.error('Failed to fetch templates:', { error: err });
         setError('An unexpected error occurred. Please try again.');
       } finally {
         setLoading(false);
@@ -69,14 +70,14 @@ export function TemplatesContent() {
         name: `${template.name} - Copy`,
       });
 
-      if (!result.success || !result.project) {
+      if (!result.success || !result.data) {
         throw new Error(result.error || 'Failed to create project');
       }
 
       // Navigate to editor with the template's canvas state
-      router.push(ROUTES.EDITOR(result.project.id));
+      router.push(ROUTES.EDITOR(result.data.id));
     } catch (error) {
-      console.error('Error using template:', error);
+      logger.error('Error using template:', { error });
       toast.error('Failed to use template');
     }
   };

@@ -1,14 +1,16 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { extractErrorMessage } from '@/lib/utils/error-handling';
+import { createApiResponse, createApiError } from '@/lib/utils/api-response';
+import { logger } from '@/lib/utils/logger';
+import type { ProjectsResponse, ProjectResponse } from '@/types/api';
 import type { Project } from '@/types';
 
-export const getProjects = async (): Promise<{ success: boolean; projects?: Project[]; error?: string }> => {
+export const getProjects = async (): Promise<ProjectsResponse> => {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
+    if (!user) return createApiError('Not authenticated');
 
     const { data, error } = await supabase
       .from('projects')
@@ -17,19 +19,18 @@ export const getProjects = async (): Promise<{ success: boolean; projects?: Proj
       .order('updated_at', { ascending: false });
 
     if (error) throw error;
-    return { success: true, projects: data as Project[] };
+    return createApiResponse(true, data as Project[]);
   } catch (error) {
-    const errorMessage = extractErrorMessage(error, 'Failed to fetch projects');
-    console.error('Get projects error:', errorMessage, error);
-    return { success: false, error: errorMessage };
+    logger.error('Get projects error:', { error });
+    return createApiError(error, 'Failed to fetch projects');
   }
 };
 
-export const getProject = async (projectId: string): Promise<{ success: boolean; project?: Project; error?: string }> => {
+export const getProject = async (projectId: string): Promise<ProjectResponse> => {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
+    if (!user) return createApiError('Not authenticated');
 
     const { data, error } = await supabase
       .from('projects')
@@ -39,10 +40,9 @@ export const getProject = async (projectId: string): Promise<{ success: boolean;
       .single();
 
     if (error) throw error;
-    return { success: true, project: data as Project };
+    return createApiResponse(true, data as Project);
   } catch (error) {
-    const errorMessage = extractErrorMessage(error, 'Failed to fetch project');
-    console.error('Get project error:', errorMessage, error);
-    return { success: false, error: errorMessage };
+    logger.error('Get project error:', { projectId, error });
+    return createApiError(error, 'Failed to fetch project');
   }
 };

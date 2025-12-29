@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logger } from '@/lib/utils/logger';
 import type { User } from '@/types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -29,7 +30,7 @@ export const useUser = () => {
           setUser(mapSupabaseUser(supabaseUser));
         }
       } catch (error) {
-        console.error('Error fetching user:', error);
+        logger.error('Error fetching user:', { error });
       } finally {
         setLoading(false);
       }

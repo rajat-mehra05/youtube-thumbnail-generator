@@ -3,32 +3,40 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { Upload, X, Loader2 } from 'lucide-react';
+import { logger } from '@/lib/utils/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TEMPLATE_CATEGORIES, EMOTIONS, STYLE_PREFERENCES, IMAGE_STYLES, ASPECT_RATIOS } from '@/lib/constants';
 import type { TemplateCategory, EmotionType, StylePreference, ImageStyle, AspectRatio } from '@/types';
+import type {
+  VideoTitleFieldProps,
+  TopicSelectProps,
+  EmotionSelectProps,
+  StyleSelectProps,
+  ImageStyleSelectProps,
+  AspectRatioSelectProps,
+  ReferenceImageFieldProps
+} from '@/types/components';
 
-interface VideoTitleFieldProps {
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-}
-
-export const VideoTitleField = ({ value, onChange, disabled }: VideoTitleFieldProps) => (
+export const VideoTitleField = ({ value, onChange, disabled, required }: VideoTitleFieldProps) => (
   <div className="space-y-2">
-    <Label htmlFor="videoTitle" className="text-base font-medium">Video Title <span className="text-red-500">*</span></Label>
-    <Input id="videoTitle" placeholder="e.g., How I Made $10K in 30 Days" value={value} onChange={(e) => onChange(e.target.value)} className="h-12 text-base" disabled={disabled} required />
+    <Label htmlFor="videoTitle" className="text-base font-medium">
+      Video Title {required && <span className="text-red-500">*</span>}
+    </Label>
+    <Input
+      id="videoTitle"
+      placeholder="e.g., How I Made $10K in 30 Days"
+      value={value}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+      className="h-12 text-base"
+      disabled={disabled}
+      required={required}
+    />
     <p className="text-sm text-muted-foreground">Enter your YouTube video title or main topic</p>
   </div>
 );
-
-interface TopicSelectProps {
-  value: TemplateCategory | '';
-  onChange: (value: TemplateCategory) => void;
-  disabled?: boolean;
-}
 
 export const TopicSelect = ({ value, onChange, disabled }: TopicSelectProps) => (
   <div className="space-y-2">
@@ -41,12 +49,6 @@ export const TopicSelect = ({ value, onChange, disabled }: TopicSelectProps) => 
     </Select>
   </div>
 );
-
-interface EmotionSelectProps {
-  value: EmotionType | '';
-  onChange: (value: EmotionType) => void;
-  disabled?: boolean;
-}
 
 export const EmotionSelect = ({ value, onChange, disabled }: EmotionSelectProps) => (
   <div className="space-y-2">
@@ -62,11 +64,6 @@ export const EmotionSelect = ({ value, onChange, disabled }: EmotionSelectProps)
   </div>
 );
 
-interface StyleSelectProps {
-  value: StylePreference | '';
-  onChange: (value: StylePreference | '') => void;
-  disabled?: boolean;
-}
 
 export const StyleSelect = ({ value, onChange, disabled }: StyleSelectProps) => (
   <div className="space-y-2">
@@ -82,18 +79,8 @@ export const StyleSelect = ({ value, onChange, disabled }: StyleSelectProps) => 
   </div>
 );
 
-interface ReferenceImageFieldProps {
-  value?: string;
-  onChange?: (url: string | undefined) => void;
-  disabled?: boolean;
-}
 
 // Image Style Selector
-interface ImageStyleSelectProps {
-  value: ImageStyle;
-  onChange: (value: ImageStyle) => void;
-  disabled?: boolean;
-}
 
 export const ImageStyleSelect = ({ value, onChange, disabled }: ImageStyleSelectProps) => (
   <div className="space-y-3">
@@ -126,11 +113,6 @@ export const ImageStyleSelect = ({ value, onChange, disabled }: ImageStyleSelect
 );
 
 // Aspect Ratio Selector
-interface AspectRatioSelectProps {
-  value: AspectRatio;
-  onChange: (value: AspectRatio) => void;
-  disabled?: boolean;
-}
 
 export const AspectRatioSelect = ({ value, onChange, disabled }: AspectRatioSelectProps) => (
   <div className="space-y-3">
@@ -213,7 +195,7 @@ export const ReferenceImageField = ({ value, onChange, disabled }: ReferenceImag
       // In production, you would upload to Supabase Storage here
       onChange?.(objectUrl);
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', { error });
       alert('Failed to process image');
     } finally {
       setUploading(false);

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { logger } from '@/lib/utils/logger';
 import type { Template, TemplateCategory, TemplateType } from '@/types';
 
 /**
@@ -29,7 +30,7 @@ export const getTemplates = async (filters?: {
 
     return { success: true, templates: data as Template[] };
   } catch (error) {
-    console.error('Get templates error:', error);
+    logger.error('Get templates error:', { error });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch templates',
@@ -56,7 +57,7 @@ export const getTemplate = async (
 
     return { success: true, template: data as Template };
   } catch (error) {
-    console.error('Get template error:', error);
+    logger.error('Get template error:', { error });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch template',

@@ -2,17 +2,24 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { createApiResponse, createApiError } from '@/lib/utils/api-response';
+import { logger } from '@/lib/utils/logger';
+import type {
+  ProjectResponse,
+  ProjectMutationResponse,
+  BulkDeleteResponse
+} from '@/types/api';
 import type { Project, CanvasState } from '@/types';
 
 export const createProject = async (data: {
   name?: string;
   video_title?: string;
   canvas_state?: CanvasState;
-}): Promise<{ success: boolean; project?: Project; error?: string }> => {
+}): Promise<ProjectResponse> => {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
+    if (!user) return createApiError('Not authenticated');
 
     const { data: project, error } = await supabase
       .from('projects')
@@ -27,10 +34,10 @@ export const createProject = async (data: {
 
     if (error) throw error;
     revalidatePath('/dashboard');
-    return { success: true, project: project as Project };
+    return createApiResponse(true, project as Project);
   } catch (error) {
-    console.error('Create project error:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to create project' };
+    logger.error('Create project error:', { error });
+    return createApiError(error, 'Failed to create project');
   }
 };
 
@@ -56,7 +63,7 @@ export const updateProject = async (
     revalidatePath(`/editor/${projectId}`);
     return { success: true, project: project as Project };
   } catch (error) {
-    console.error('Update project error:', error);
+    logger.error('Update project error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to update project' };
   }
 };
@@ -72,12 +79,12 @@ export const deleteProject = async (projectId: string): Promise<{ success: boole
     revalidatePath('/dashboard');
     return { success: true };
   } catch (error) {
-    console.error('Delete project error:', error);
+    logger.error('Delete project error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to delete project' };
   }
 };
 
-export const duplicateProject = async (projectId: string): Promise<{ success: boolean; project?: Project; error?: string }> => {
+export const duplicateProject = async (projectId: string): Promise<{ success: boolean; data?: Project; error?: string }> => {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -103,9 +110,9 @@ export const duplicateProject = async (projectId: string): Promise<{ success: bo
 
     if (createError) throw createError;
     revalidatePath('/dashboard');
-    return { success: true, project: project as Project };
+    return { success: true, data: project as Project };
   } catch (error) {
-    console.error('Duplicate project error:', error);
+    logger.error('Duplicate project error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to duplicate project' };
   }
 };
@@ -130,7 +137,7 @@ export const bulkDeleteProjects = async (projectIds: string[]): Promise<{ succes
     revalidatePath('/dashboard');
     return { success: true, deletedCount: count || 0 };
   } catch (error) {
-    console.error('Bulk delete projects error:', error);
+    logger.error('Bulk delete projects error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to delete projects' };
   }
 };
@@ -150,7 +157,7 @@ export const deleteAllProjects = async (): Promise<{ success: boolean; deletedCo
     revalidatePath('/dashboard');
     return { success: true, deletedCount: count || 0 };
   } catch (error) {
-    console.error('Delete all projects error:', error);
+    logger.error('Delete all projects error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to delete all projects' };
   }
 };

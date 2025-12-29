@@ -10,17 +10,17 @@
 export const calculateLuminance = (hexColor: string): number => {
   // Remove # if present
   const hex = hexColor.replace('#', '');
-  
+
   // Convert to RGB
   const r = parseInt(hex.substring(0, 2), 16) / 255;
   const g = parseInt(hex.substring(2, 4), 16) / 255;
   const b = parseInt(hex.substring(4, 6), 16) / 255;
-  
+
   // Apply gamma correction
   const rLinear = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
   const gLinear = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
   const bLinear = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
-  
+
   // Calculate luminance
   return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
 };
@@ -32,10 +32,10 @@ export const calculateLuminance = (hexColor: string): number => {
 export const calculateContrast = (color1: string, color2: string): number => {
   const lum1 = calculateLuminance(color1);
   const lum2 = calculateLuminance(color2);
-  
+
   const lighter = Math.max(lum1, lum2);
   const darker = Math.min(lum1, lum2);
-  
+
   return (lighter + 0.05) / (darker + 0.05);
 };
 
@@ -70,7 +70,7 @@ export const generateHighContrastScheme = (
 ): string[] => {
   const textFill = isDarkBackground ? '#FFFFFF' : '#000000';
   const textStroke = isDarkBackground ? '#000000' : '#FFFFFF';
-  
+
   return [
     baseColor,
     adjustBrightness(baseColor, isDarkBackground ? 30 : -30),
@@ -87,16 +87,16 @@ export const adjustBrightness = (hexColor: string, percent: number): string => {
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
-  
+
   const adjust = (value: number) => {
     const adjusted = value + (value * percent) / 100;
     return Math.max(0, Math.min(255, Math.round(adjusted)));
   };
-  
+
   const newR = adjust(r).toString(16).padStart(2, '0');
   const newG = adjust(g).toString(16).padStart(2, '0');
   const newB = adjust(b).toString(16).padStart(2, '0');
-  
+
   return `#${newR}${newG}${newB}`;
 };
 
@@ -132,26 +132,26 @@ export const selectColorScheme = (
 ): string[] => {
   // Map emotion and style to color schemes
   if (emotion === 'excited' || emotion === 'shocked') {
-    return YOUTUBE_COLOR_SCHEMES.energetic;
+    return [...YOUTUBE_COLOR_SCHEMES.energetic];
   } else if (emotion === 'curious') {
-    return YOUTUBE_COLOR_SCHEMES.cool;
+    return [...YOUTUBE_COLOR_SCHEMES.cool];
   } else if (emotion === 'happy') {
-    return YOUTUBE_COLOR_SCHEMES.vibrant;
+    return [...YOUTUBE_COLOR_SCHEMES.vibrant];
   } else if (emotion === 'serious') {
-    return YOUTUBE_COLOR_SCHEMES.professional;
+    return [...YOUTUBE_COLOR_SCHEMES.professional];
   }
-  
+
   // Fallback based on style
   if (style === 'bold_text') {
-    return YOUTUBE_COLOR_SCHEMES.classic;
+    return [...YOUTUBE_COLOR_SCHEMES.classic];
   } else if (style === 'minimal') {
-    return YOUTUBE_COLOR_SCHEMES.professional;
+    return [...YOUTUBE_COLOR_SCHEMES.professional];
   } else if (style === 'colorful') {
-    return YOUTUBE_COLOR_SCHEMES.neon;
+    return [...YOUTUBE_COLOR_SCHEMES.neon];
   } else if (style === 'dark') {
-    return YOUTUBE_COLOR_SCHEMES.dark;
+    return [...YOUTUBE_COLOR_SCHEMES.dark];
   }
-  
-  return YOUTUBE_COLOR_SCHEMES.energetic;
+
+  return [...YOUTUBE_COLOR_SCHEMES.energetic];
 };
 

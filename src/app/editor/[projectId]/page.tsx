@@ -4,7 +4,8 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import nextDynamic from 'next/dynamic';
-import { v4 as uuidv4 } from 'uuid';
+import { generateImageId } from '@/lib/utils/id-generator';
+import { logger } from '@/lib/utils/logger';
 import { LeftSidebar } from '@/components/editor/LeftSidebar';
 import { TopBar } from '@/components/editor/TopBar';
 import { RightPanel } from '@/components/editor/RightPanel';
@@ -14,7 +15,7 @@ import { useUser } from '@/hooks';
 import { useCanvasState } from '@/hooks/useCanvasState';
 import { getProject, updateProject } from '@/lib/actions/projects';
 import { createClient } from '@/lib/supabase/client';
-import type { Project, CanvasLayer, ImageLayer, ShapeType } from '@/types';
+import type { Project, ImageLayer, ShapeType } from '@/types';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Dynamically import Canvas to avoid SSR issues with Konva
@@ -71,20 +72,20 @@ export default function EditorPage() {
 
         if (!isMounted) return;
 
-        if (!result.success || !result.project) {
+        if (!result.success || !result.data) {
           toast.error('Project not found');
           router.push(ROUTES.DASHBOARD);
           return;
         }
 
-        setProject(result.project);
+        setProject(result.data);
 
         // Load canvas state if exists
-        if (result.project.canvas_state) {
-          loadState(result.project.canvas_state);
+        if (result.data.canvas_state) {
+          loadState(result.data.canvas_state);
         }
       } catch (error) {
-        console.error('Failed to fetch project:', error);
+        logger.error('Failed to fetch project:', { error });
         if (isMounted) {
           toast.error('Failed to load project');
         }
@@ -122,7 +123,7 @@ export default function EditorPage() {
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Save error:', error);
+      logger.error('Save error:', { error });
       toast.error('Failed to save project');
     } finally {
       setSaving(false);
@@ -187,7 +188,7 @@ export default function EditorPage() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       toast.success('Export complete! Download starting...');
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error:', { error });
       toast.error('Failed to export');
     } finally {
       setExporting(false);
@@ -246,7 +247,7 @@ export default function EditorPage() {
 
       toast.success('Image added!');
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', { error });
       toast.error('Failed to upload image');
     } finally {
       setUploadingImage(false);
@@ -300,7 +301,7 @@ export default function EditorPage() {
     } else {
       // Add new background layer
       const newBgLayer: Partial<ImageLayer> = {
-        id: uuidv4(),
+        id: generateImageId(),
         type: 'image',
         name: 'AI Background',
         x: 0,
