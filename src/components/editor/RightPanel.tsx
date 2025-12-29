@@ -251,10 +251,9 @@ export const RightPanel = ({
                   onClick={() => onSelectLayer(layer.id)}
                   className={`
                     group flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all
-                    ${
-                      selectedLayerId === layer.id
-                        ? 'bg-violet-500/10 ring-1 ring-violet-500/30'
-                        : 'hover:bg-muted'
+                    ${selectedLayerId === layer.id
+                      ? 'bg-violet-500/10 ring-1 ring-violet-500/30'
+                      : 'hover:bg-muted'
                     }
                   `}
                 >
@@ -265,10 +264,9 @@ export const RightPanel = ({
                   <div
                     className={`
                       w-8 h-8 rounded-md flex items-center justify-center text-sm font-medium
-                      ${
-                        layer.type === 'text'
-                          ? 'bg-blue-500/10 text-blue-500'
-                          : layer.type === 'image'
+                      ${layer.type === 'text'
+                        ? 'bg-blue-500/10 text-blue-500'
+                        : layer.type === 'image'
                           ? 'bg-green-500/10 text-green-500'
                           : 'bg-purple-500/10 text-purple-500'
                       }
@@ -316,9 +314,8 @@ export const RightPanel = ({
                       e.stopPropagation();
                       onToggleVisibility(layer.id);
                     }}
-                    className={`h-6 w-6 ${
-                      !layer.visible ? 'text-muted-foreground' : ''
-                    }`}
+                    className={`h-6 w-6 ${!layer.visible ? 'text-muted-foreground' : ''
+                      }`}
                     aria-label={layer.visible ? 'Hide' : 'Show'}
                   >
                     {layer.visible ? (
@@ -336,9 +333,8 @@ export const RightPanel = ({
                       e.stopPropagation();
                       onToggleLock(layer.id);
                     }}
-                    className={`h-6 w-6 ${
-                      layer.locked ? 'text-amber-500' : ''
-                    }`}
+                    className={`h-6 w-6 ${layer.locked ? 'text-amber-500' : ''
+                      }`}
                     aria-label={layer.locked ? 'Unlock' : 'Lock'}
                   >
                     {layer.locked ? (
@@ -410,11 +406,10 @@ const TextLayerProperties = ({
           <button
             key={color}
             onClick={() => onUpdate({ fill: color })}
-            className={`w-6 h-6 rounded-md border-2 transition-all cursor-pointer ${
-              layer.fill === color
+            className={`w-6 h-6 rounded-md border-2 transition-all cursor-pointer ${layer.fill === color
                 ? 'border-violet-500 scale-110'
                 : 'border-transparent hover:scale-105'
-            }`}
+              }`}
             style={{ backgroundColor: color }}
             title={color}
           />
@@ -455,4 +450,3 @@ const TextLayerProperties = ({
     </div>
   </div>
 );
-
