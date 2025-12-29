@@ -31,7 +31,7 @@ export const buildThumbnailPrompt = (
 
     // Add reference image instruction if provided
     if (hasReferenceImage) {
-        prompt += ' IMPORTANT: Incorporate visual elements and style inspiration from the provided reference image while maintaining the overall composition and text placement suitable for a YouTube thumbnail.';
+        prompt += ' IMPORTANT: Use visual elements and style inspiration that could be inspired by the provided reference imagery while maintaining composition and text placement suitable for a YouTube thumbnail.';
     }
 
     return prompt;
