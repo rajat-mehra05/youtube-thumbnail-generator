@@ -32,7 +32,7 @@ export const DashboardClient = ({ initialProjects }: DashboardClientProps) => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
 
-    const success = await handleAsyncApiCall(
+    await handleAsyncApiCall(
       () => deleteProject(id),
       {
         onSuccess: () => {
@@ -45,7 +45,7 @@ export const DashboardClient = ({ initialProjects }: DashboardClientProps) => {
   };
 
   const handleDuplicate = async (id: string) => {
-    const success = await handleAsyncApiCall(
+    await handleAsyncApiCall(
       () => duplicateProject(id),
       {
         onSuccess: (project) => {
@@ -85,7 +85,7 @@ export const DashboardClient = ({ initialProjects }: DashboardClientProps) => {
       return;
     }
 
-    const success = await handleAsyncApiCall(
+    await handleAsyncApiCall(
       () => bulkDeleteProjects(Array.from(selectedProjects)),
       {
         onSuccess: () => {
@@ -106,10 +106,10 @@ export const DashboardClient = ({ initialProjects }: DashboardClientProps) => {
       return;
     }
 
-    const success = await handleAsyncApiCall(
+    await handleAsyncApiCall(
       () => deleteAllProjects(),
       {
-        onSuccess: (result) => {
+        onSuccess: () => {
           setProjects([]);
           setSelectedProjects(new Set());
           setSelectionMode(false);

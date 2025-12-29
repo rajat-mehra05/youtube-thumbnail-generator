@@ -5,9 +5,7 @@
 
 import type { ReactNode, FormEvent } from 'react';
 import type {
-  TemplateCategory,
   EmotionType,
-  StylePreference,
   ImageStyle,
   AspectRatio,
   ShapeType,
@@ -24,11 +22,6 @@ export interface VideoTitleFieldProps {
   placeholder?: string;
 }
 
-export interface TopicSelectProps {
-  value: TemplateCategory | '';
-  onChange: (value: TemplateCategory | '') => void;
-  disabled?: boolean;
-}
 
 export interface EmotionSelectProps {
   value: EmotionType | '';
@@ -36,11 +29,6 @@ export interface EmotionSelectProps {
   disabled?: boolean;
 }
 
-export interface StyleSelectProps {
-  value: StylePreference | '';
-  onChange: (value: StylePreference | '') => void;
-  disabled?: boolean;
-}
 
 export interface ImageStyleSelectProps {
   value: ImageStyle;
@@ -139,16 +127,7 @@ export interface FileUploadResult {
 }
 
 // Template component props
-export interface TemplateGridProps {
-  templates: import('./index').Template[];
-  loading?: boolean;
-  onSelect: (template: import('./index').Template) => void;
-}
 
-export interface TemplateCardProps {
-  template: import('./index').Template;
-  onSelect: () => void;
-}
 
 // Authentication component props
 export interface AuthWallModalProps {

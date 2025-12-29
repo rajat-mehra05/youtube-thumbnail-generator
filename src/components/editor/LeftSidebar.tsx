@@ -8,18 +8,16 @@ import {
   Shapes,
   Upload,
   Sparkles,
-  FolderOpen,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { ShapeType } from '@/types';
 
-type SidebarTab = 'elements' | 'text' | 'uploads' | 'templates' | 'ai' | null;
+type SidebarTab = 'elements' | 'text' | 'uploads' | 'ai' | null;
 
 interface LeftSidebarProps {
   onAddLayer: (type: 'text' | 'image' | ShapeType) => void;
-  onOpenTemplates?: () => void;
   onOpenAI?: () => void;
 }
 
@@ -27,13 +25,11 @@ const SIDEBAR_ITEMS = [
   { id: 'elements' as const, icon: Shapes, label: 'Elements' },
   { id: 'text' as const, icon: Type, label: 'Text' },
   { id: 'uploads' as const, icon: Upload, label: 'Uploads' },
-  { id: 'templates' as const, icon: FolderOpen, label: 'Templates' },
   { id: 'ai' as const, icon: Sparkles, label: 'AI Magic' },
 ];
 
 export const LeftSidebar = ({
   onAddLayer,
-  onOpenTemplates,
   onOpenAI,
 }: LeftSidebarProps) => {
   const [activeTab, setActiveTab] = useState<SidebarTab>(null);
@@ -63,7 +59,7 @@ export const LeftSidebar = ({
               onClick={() => handleTabClick(item.id)}
               className={`
                 w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-0.5
-                transition-all duration-200 group
+                transition-all duration-200 group cursor-pointer
                 ${isActive
                   ? 'bg-violet-500/10 text-violet-500'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -101,9 +97,6 @@ export const LeftSidebar = ({
             )}
             {activeTab === 'text' && <TextPanel onAddLayer={onAddLayer} />}
             {activeTab === 'uploads' && <UploadsPanel onAddLayer={onAddLayer} />}
-            {activeTab === 'templates' && (
-              <TemplatesPanel onOpenTemplates={onOpenTemplates} />
-            )}
           </div>
         </div>
       )}
@@ -133,7 +126,7 @@ const ElementsPanel = ({
           <button
             key={item.shape}
             onClick={() => onAddLayer(item.shape as ShapeType)}
-            className="aspect-square rounded-xl border border-border bg-muted/30 hover:bg-muted hover:border-violet-500/50 transition-all flex flex-col items-center justify-center gap-1 group"
+            className="aspect-square rounded-xl border border-border bg-muted/30 hover:bg-muted hover:border-violet-500/50 transition-all flex flex-col items-center justify-center gap-1 group cursor-pointer"
           >
             <span className="text-2xl group-hover:scale-110 transition-transform">
               {item.icon}
@@ -156,14 +149,15 @@ const ElementsPanel = ({
       <div className="grid grid-cols-2 gap-2">
         <button
           onClick={() => onAddLayer('image')}
-          className="p-4 rounded-xl border border-dashed border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all flex flex-col items-center gap-2"
+          className="p-4 rounded-xl border border-dashed border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all flex flex-col items-center gap-2 cursor-pointer"
+          aria-label="Add image layer"
         >
           <Image className="w-8 h-8 text-muted-foreground" />
           <span className="text-sm">Add Image</span>
         </button>
         <button
           onClick={() => onAddLayer('rectangle')}
-          className="p-4 rounded-xl border border-dashed border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all flex flex-col items-center gap-2"
+          className="p-4 rounded-xl border border-dashed border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all flex flex-col items-center gap-2 cursor-pointer"
         >
           <LayoutGrid className="w-8 h-8 text-muted-foreground" />
           <span className="text-sm">Add Frame</span>
@@ -188,21 +182,21 @@ const TextPanel = ({
     <div className="space-y-3">
       <button
         onClick={() => onAddLayer('text')}
-        className="w-full p-4 rounded-xl border border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all text-left"
+        className="w-full p-4 rounded-xl border border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all text-left cursor-pointer"
       >
         <span className="text-3xl font-bold">Add a heading</span>
       </button>
 
       <button
         onClick={() => onAddLayer('text')}
-        className="w-full p-3 rounded-xl border border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all text-left"
+        className="w-full p-3 rounded-xl border border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all text-left cursor-pointer"
       >
         <span className="text-xl font-semibold">Add a subheading</span>
       </button>
 
       <button
         onClick={() => onAddLayer('text')}
-        className="w-full p-3 rounded-xl border border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all text-left"
+        className="w-full p-3 rounded-xl border border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all text-left cursor-pointer"
       >
         <span className="text-base">Add body text</span>
       </button>
@@ -277,45 +271,5 @@ const UploadsPanel = ({
   </div>
 );
 
-// Templates Panel
-const TemplatesPanel = ({
-  onOpenTemplates,
-}: {
-  onOpenTemplates?: () => void;
-}) => (
-  <div className="space-y-4">
-    <p className="text-sm text-muted-foreground">
-      Start with a professionally designed template
-    </p>
-
-    <Button
-      onClick={onOpenTemplates}
-      className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700"
-    >
-      Browse Templates
-    </Button>
-
-    <Separator />
-
-    <div>
-      <h3 className="text-sm font-medium mb-3 text-muted-foreground">
-        Categories
-      </h3>
-      <div className="grid grid-cols-2 gap-2">
-        {['Gaming', 'Vlog', 'Tutorial', 'Podcast', 'Reaction', 'Business'].map(
-          (category) => (
-            <button
-              key={category}
-              onClick={onOpenTemplates}
-              className="p-3 rounded-lg border border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all text-sm"
-            >
-              {category}
-            </button>
-          )
-        )}
-      </div>
-    </div>
-  </div>
-);
 
 

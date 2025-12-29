@@ -82,24 +82,18 @@ export const Navbar = ({
                 <Button
                   variant={pathname === '/dashboard' ? 'secondary' : 'ghost'}
                   size="sm"
+                  className="cursor-pointer"
                 >
                   Dashboard
-                </Button>
-              </Link>
-              <Link href={ROUTES.CREATE}>
-                <Button
-                  size="sm"
-                  className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
-                >
-                  + Create New
                 </Button>
               </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="relative size-9 rounded-full"
+                    className="relative cursor-pointer size-9 rounded-full"
                     aria-label="User menu"
+                    suppressHydrationWarning={true}
                   >
                     <Avatar className="size-9">
                       <AvatarImage
@@ -114,7 +108,7 @@ export const Navbar = ({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="flex items-center gap-2 p-2">
-                    <Avatar className="size-8">
+                    <Avatar className="size-8 cursor-pointer">
                       <AvatarImage
                         src={user.avatar_url}
                         alt={user.full_name || user.email}
@@ -151,26 +145,26 @@ export const Navbar = ({
               {!isLandingPage && (
                 <>
                   <Link href={ROUTES.LOGIN}>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="cursor-pointer">
                       Login
                     </Button>
                   </Link>
                   <Link href={ROUTES.LOGIN}>
-                    <Button size="sm">Sign Up</Button>
+                    <Button size="sm" className="cursor-pointer">Sign Up</Button>
                   </Link>
                 </>
               )}
               {isLandingPage && (
                 <>
                   <Link href={ROUTES.LOGIN}>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="cursor-pointer">
                       Login
                     </Button>
                   </Link>
                   <Link href={ROUTES.LOGIN}>
                     <Button
                       size="sm"
-                      className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
+                      className="cursor-pointer bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
                     >
                       Sign Up
                     </Button>

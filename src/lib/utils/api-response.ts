@@ -1,6 +1,6 @@
 import { toast } from 'sonner';
-import { extractErrorMessage, isError } from '@/lib/utils/error-handling';
-import type { ApiResponse, ApiSuccess, ApiFailure } from '@/types/api';
+import { extractErrorMessage } from '@/lib/utils/error-handling';
+import type { ApiResponse, ApiFailure } from '@/types/api';
 import { isApiSuccess, isApiFailure } from '@/types/api';
 
 /**

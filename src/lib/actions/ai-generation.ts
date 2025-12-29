@@ -18,6 +18,7 @@ export interface GenerateImageInput {
   aspectRatio?: AspectRatio;
   userId?: string;
   sessionId?: string;
+  referenceImage?: File;
 }
 
 export interface GenerateThumbnailResult {
@@ -100,22 +101,25 @@ export const generateImage = async (
     const imageStyle = input.imageStyle || AI_DEFAULTS.IMAGE_STYLE;
     const emotion = input.emotion || AI_DEFAULTS.EMOTION;
 
-    // Check cache first
-    const cacheKey = generateCacheKey('image', {
+    // Check cache first (skip cache if reference image is provided)
+    const cacheKey = input.referenceImage ? null : generateCacheKey('image', {
       prompt: sanitizedPrompt,
       aspectRatio,
       imageStyle,
       emotion
     });
 
-    const cached = await checkCache(cacheKey);
-    if (cached && typeof cached === 'object' && 'imageUrl' in cached) {
-      logger.debug('Using cached image');
-      return { success: true, imageUrl: (cached as { imageUrl: string }).imageUrl };
+    // Only check cache if we have a cache key (no reference image)
+    if (cacheKey) {
+      const cached = await checkCache(cacheKey);
+      if (cached && typeof cached === 'object' && 'imageUrl' in cached) {
+        logger.debug('Using cached image');
+        return { success: true, imageUrl: (cached as { imageUrl: string }).imageUrl };
+      }
     }
 
     // Build the enhanced prompt
-    const enhancedPrompt = buildThumbnailPrompt(sanitizedPrompt, imageStyle, emotion);
+    const enhancedPrompt = buildThumbnailPrompt(sanitizedPrompt, imageStyle, emotion, !!input.referenceImage);
 
     logger.info('Generating image with DALL-E...', {
       userPrompt: sanitizedPrompt.substring(0, 50),
@@ -142,8 +146,10 @@ export const generateImage = async (
       throw new Error('No image generated from DALL-E');
     }
 
-    // Cache the result
-    await storeInCache(cacheKey, 'image_generation', { imageUrl }, AI_DEFAULTS.CACHE_HOURS);
+    // Cache the result (only if we have a cache key)
+    if (cacheKey) {
+      await storeInCache(cacheKey, 'image_generation', { imageUrl }, AI_DEFAULTS.CACHE_HOURS);
+    }
 
     return { success: true, imageUrl };
   } catch (error) {

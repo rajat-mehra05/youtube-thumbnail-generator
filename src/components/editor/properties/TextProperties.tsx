@@ -53,7 +53,7 @@ export const TextProperties = ({ layer, onUpdate }: TextPropertiesProps) => (
           <button
             key={color}
             onClick={() => onUpdate({ fill: color })}
-            className={`w-6 h-6 rounded-full border-2 transition-all ${layer.fill === color ? 'border-violet-500 scale-110' : 'border-transparent hover:scale-105'}`}
+            className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${layer.fill === color ? 'border-violet-500 scale-110' : 'border-transparent hover:scale-105'}`}
             style={{ backgroundColor: color }}
             title={color}
           />
@@ -77,7 +77,7 @@ export const TextProperties = ({ layer, onUpdate }: TextPropertiesProps) => (
           <button
             key={align}
             onClick={() => onUpdate({ align })}
-            className={`flex-1 p-2 rounded border text-sm ${layer.align === align ? 'bg-violet-500 text-white border-violet-500' : 'border-border hover:bg-muted'}`}
+            className={`flex-1 p-2 rounded border text-sm cursor-pointer ${layer.align === align ? 'bg-violet-500 text-white border-violet-500' : 'border-border hover:bg-muted'}`}
           >
             {align === 'left' && '⬅️'}
             {align === 'center' && '↔️'}

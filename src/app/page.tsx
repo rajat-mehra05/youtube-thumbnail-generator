@@ -5,7 +5,6 @@ import {
   HeroSection,
   ShowcaseSection,
   FeaturesSection,
-  CategoriesSection,
   CTASection,
 } from '@/components/home';
 
@@ -20,7 +19,6 @@ export default async function HomePage() {
         <HeroSection />
         <ShowcaseSection />
         <FeaturesSection />
-        <CategoriesSection />
         <CTASection />
       </main>
       <Footer />

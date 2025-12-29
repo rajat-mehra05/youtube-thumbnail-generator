@@ -388,7 +388,6 @@ export default function EditorPage() {
         {/* Left Sidebar */}
         <LeftSidebar
           onAddLayer={handleAddLayer}
-          onOpenTemplates={() => router.push(ROUTES.CREATE_TEMPLATES)}
           onOpenAI={handleOpenAIMagic}
         />
 

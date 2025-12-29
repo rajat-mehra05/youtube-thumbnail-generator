@@ -21,12 +21,12 @@ export const CTASection = () => (
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href={ROUTES.TRY}>
-              <Button size="lg" className="h-14 px-8 text-lg bg-white text-violet-600 hover:bg-white/90">
+              <Button size="lg" className="h-14 px-8 text-lg cursor-pointer bg-white text-violet-600 hover:bg-white/90">
                 Try Free Now
               </Button>
             </Link>
             <Link href={ROUTES.LOGIN}>
-              <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-white/30 text-white hover:bg-white/10">
+              <Button size="lg" className="h-14 px-8 text-lg cursor-pointer bg-violet-800 text-white hover:bg-violet-700">
                 Sign Up
               </Button>
             </Link>

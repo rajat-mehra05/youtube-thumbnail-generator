@@ -10,7 +10,6 @@ import {
   EyeOff,
   Lock,
   Unlock,
-  Trash2,
   GripVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -46,7 +45,6 @@ export const RightPanel = ({
   selectedLayer,
   onSelectLayer,
   onUpdateLayer,
-  onDeleteLayer,
   onMoveLayer,
   onToggleVisibility,
   onToggleLock,
@@ -412,7 +410,7 @@ const TextLayerProperties = ({
           <button
             key={color}
             onClick={() => onUpdate({ fill: color })}
-            className={`w-6 h-6 rounded-md border-2 transition-all ${
+            className={`w-6 h-6 rounded-md border-2 transition-all cursor-pointer ${
               layer.fill === color
                 ? 'border-violet-500 scale-110'
                 : 'border-transparent hover:scale-105'

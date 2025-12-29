@@ -74,7 +74,7 @@ export const LayerPanel = ({
                   e.stopPropagation();
                   onToggleVisibility(layer.id);
                 }}
-                className={`p-1 rounded hover:bg-muted-foreground/10 text-xs ${
+                className={`p-1 rounded hover:bg-muted-foreground/10 text-xs cursor-pointer ${
                   layer.visible ? 'text-foreground' : 'text-muted-foreground'
                 }`}
                 title={layer.visible ? 'Hide layer' : 'Show layer'}
@@ -88,7 +88,7 @@ export const LayerPanel = ({
                   e.stopPropagation();
                   onToggleLock(layer.id);
                 }}
-                className={`p-1 rounded hover:bg-muted-foreground/10 text-xs ${
+                className={`p-1 rounded hover:bg-muted-foreground/10 text-xs cursor-pointer ${
                   layer.locked ? 'text-amber-500' : 'text-muted-foreground'
                 }`}
                 title={layer.locked ? 'Unlock layer' : 'Lock layer'}

@@ -6,8 +6,6 @@ import { createApiResponse, createApiError } from '@/lib/utils/api-response';
 import { logger } from '@/lib/utils/logger';
 import type {
   ProjectResponse,
-  ProjectMutationResponse,
-  BulkDeleteResponse
 } from '@/types/api';
 import type { Project, CanvasState } from '@/types';
 
@@ -142,7 +140,7 @@ export const bulkDeleteProjects = async (projectIds: string[]): Promise<{ succes
   }
 };
 
-export const deleteAllProjects = async (): Promise<{ success: boolean; deletedCount?: number; error?: string }> => {
+export const deleteAllProjects = async (): Promise<{ success: boolean; data?: { deletedCount: number }; error?: string }> => {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -155,7 +153,7 @@ export const deleteAllProjects = async (): Promise<{ success: boolean; deletedCo
 
     if (error) throw error;
     revalidatePath('/dashboard');
-    return { success: true, deletedCount: count || 0 };
+    return { success: true, data: { deletedCount: count || 0 } };
   } catch (error) {
     logger.error('Delete all projects error:', { error });
     return { success: false, error: error instanceof Error ? error.message : 'Failed to delete all projects' };

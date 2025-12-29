@@ -1,90 +1,183 @@
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { generateImageId, generateLayerId } from '@/lib/utils/id-generator';
+import { handleAsyncApiCall } from '@/lib/utils/api-response';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { MethodCard } from '@/components/create/MethodCard';
-import { ROUTES } from '@/lib/constants';
-import { createClient } from '@/lib/supabase/server';
+import { AIThumbnailGenerator } from '@/components/create/AIThumbnailGenerator';
+import { ROUTES, getCanvasDimensions } from '@/lib/constants';
+import { useUser } from '@/hooks';
+import { createProject } from '@/lib/actions/projects';
+import type { CanvasState, ImageLayer, TextLayer, CanvasLayer } from '@/types';
 
-export const metadata = {
-  title: 'Create New Thumbnail',
-};
+interface TextSuggestions {
+  headline: string;
+  subheadline: string;
+}
 
-export default async function CreatePage() {
-  const supabase = await createClient();
+export default function CreatePage() {
+  const router = useRouter();
+  const { user, loading: userLoading } = useUser();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const handleThumbnailGenerated = async (
+    backgroundUrl: string,
+    textSuggestions?: TextSuggestions,
+    colorScheme?: string[]
+  ) => {
+    const success = await createThumbnailProject(backgroundUrl, textSuggestions, colorScheme);
+    if (!success) {
+      return;
+    }
+  };
 
-  if (!user) {
-    redirect(ROUTES.LOGIN);
+  const createThumbnailProject = async (
+    backgroundUrl: string,
+    textSuggestions?: TextSuggestions,
+    colorScheme?: string[]
+  ): Promise<boolean> => {
+    return await handleAsyncApiCall(
+      async () => {
+        const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions('16:9');
+        const layers: CanvasLayer[] = [];
+
+        // Add background image layer
+        const bgLayer: ImageLayer = {
+          id: generateImageId(),
+          type: 'image',
+          name: 'Background',
+          x: 0,
+          y: 0,
+          width: canvasWidth,
+          height: canvasHeight,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          opacity: 1,
+          zIndex: 0,
+          visible: true,
+          locked: true,
+          src: backgroundUrl,
+        };
+        layers.push(bgLayer);
+
+        // Get text colors from color scheme or use defaults
+        const textFill = colorScheme?.[2] || '#FFFFFF';
+        const textStroke = colorScheme?.[3] || '#000000';
+
+        // Add headline text layer if suggestions provided
+        if (textSuggestions?.headline) {
+          const headlineLayer: TextLayer = {
+            id: generateLayerId(),
+            type: 'text',
+            name: 'Headline',
+            x: canvasWidth / 2 - 400,
+            y: canvasHeight / 2 - 60,
+            width: 800,
+            height: 120,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 1,
+            zIndex: 1,
+            visible: true,
+            locked: false,
+            text: textSuggestions.headline,
+            fontSize: 72,
+            fontFamily: 'Impact',
+            fontStyle: 'bold',
+            fill: textFill,
+            stroke: textStroke,
+            strokeWidth: 4,
+            align: 'center',
+            verticalAlign: 'middle',
+          };
+          layers.push(headlineLayer);
+        }
+
+        // Add subheadline text layer if provided
+        if (textSuggestions?.subheadline) {
+          const subheadlineLayer: TextLayer = {
+            id: generateLayerId(),
+            type: 'text',
+            name: 'Subheadline',
+            x: canvasWidth / 2 - 300,
+            y: canvasHeight / 2 + 60,
+            width: 600,
+            height: 60,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 1,
+            zIndex: 2,
+            visible: true,
+            locked: false,
+            text: textSuggestions.subheadline,
+            fontSize: 36,
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fill: textFill,
+            stroke: textStroke,
+            strokeWidth: 2,
+            align: 'center',
+            verticalAlign: 'middle',
+          };
+          layers.push(subheadlineLayer);
+        }
+
+        // Create canvas state
+        const canvasState: CanvasState = {
+          width: canvasWidth,
+          height: canvasHeight,
+          layers,
+        };
+
+        // Create project with a meaningful name
+        const projectName = textSuggestions?.headline
+          ? `${textSuggestions.headline} Thumbnail`
+          : 'AI Generated Thumbnail';
+
+        return await createProject({
+          name: projectName,
+          video_title: textSuggestions?.headline || '',
+          canvas_state: canvasState,
+        });
+      },
+      {
+        onSuccess: (project) => {
+          toast.success('Thumbnail created! Opening editor...');
+          router.push(ROUTES.EDITOR(project.id));
+        },
+        onError: (err) => {
+          toast.error(err);
+        },
+      }
+    );
+  };
+
+  if (userLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
+      </div>
+    );
   }
 
-  const methods = [
-    {
-      href: ROUTES.CREATE_AI,
-      icon: '✨',
-      title: 'AI Magic',
-      description: 'Describe your video and let AI generate stunning thumbnail concepts for you.',
-      badge: 'Recommended',
-    },
-    {
-      href: ROUTES.CREATE_UPLOAD,
-      icon: '📤',
-      title: 'Upload Image',
-      description: 'Start with your own image. Perfect for using your photos or screenshots.',
-    },
-    {
-      href: ROUTES.CREATE_TEMPLATES,
-      icon: '📋',
-      title: 'Templates',
-      description: 'Choose from 50+ professionally designed templates for every niche.',
-    },
-  ];
+  if (!user) {
+    router.push(ROUTES.LOGIN);
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar
-        user={{
-          id: user.id,
-          email: user.email || '',
-          full_name: user.user_metadata?.full_name,
-          avatar_url: user.user_metadata?.avatar_url,
-          created_at: user.created_at,
-        }}
-      />
-
-      <main className="flex-1 py-8 md:py-16">
-        <div className="container max-w-4xl mx-auto px-4">
-          {/* Back link */}
-          <Link
-            href={ROUTES.DASHBOARD}
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8"
-          >
-            ← Back to Dashboard
-          </Link>
-
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              How do you want to create?
-            </h1>
-            <p className="text-muted-foreground max-w-lg mx-auto">
-              Choose a method to start creating your YouTube thumbnail. You can
-              always combine methods in the editor.
-            </p>
-          </div>
-
-          {/* Method Cards */}
-          <div className="grid md:grid-cols-3 gap-6">
-            {methods.map((method) => (
-              <MethodCard key={method.title} {...method} />
-            ))}
-          </div>
-        </div>
+      <Navbar user={user} />
+      <main className="flex-1">
+        <AIThumbnailGenerator
+          onThumbnailGenerated={handleThumbnailGenerated}
+          userId={user.id}
+        />
       </main>
-
       <Footer />
     </div>
   );

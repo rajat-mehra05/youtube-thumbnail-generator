@@ -1,160 +1,200 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { logger } from '@/lib/utils/logger';
+import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { generateImageId, generateLayerId } from '@/lib/utils/id-generator';
+import { handleAsyncApiCall } from '@/lib/utils/api-response';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { GuestAIForm, TrialUsedCard } from '@/components/guest';
+import { AIThumbnailGenerator } from '@/components/create/AIThumbnailGenerator';
 import { AuthWallModal } from '@/components/auth/AuthWallModal';
-import { ROUTES } from '@/lib/constants';
+import { ROUTES, getCanvasDimensions } from '@/lib/constants';
 import { getOrCreateGuestSession, getRemainingGenerations, hasRemainingGenerations, incrementGuestGenerations } from '@/lib/guest-session';
 import { syncGuestSession } from '@/lib/actions/guest-session';
-import { generateImageAndStore } from '@/lib/actions/ai-generation';
-import type { TemplateCategory, EmotionType, StylePreference, ImageStyle } from '@/types';
-import { LoadingCard } from '@/components/ui/loading-spinner';
-import { InlineError } from '@/components/ui/error-message';
+import { createProject } from '@/lib/actions/projects';
+import type { CanvasState, ImageLayer, TextLayer, CanvasLayer } from '@/types';
 
-// Map StylePreference to ImageStyle for backward compatibility
-const styleToImageStyle: Record<StylePreference, ImageStyle> = {
-  bold_text: 'cinematic',
-  minimal: 'educational',
-  colorful: 'digital_art',
-  dark: 'cinematic',
-  professional: 'educational',
-};
+interface TextSuggestions {
+  headline: string;
+  subheadline: string;
+}
 
 export default function TryPage() {
-  const [loading, setLoading] = useState(false);
-  const [generationsRemaining, setGenerationsRemaining] = useState(1);
+  const router = useRouter();
+  const [generationsRemaining, setGenerationsRemaining] = useState(() => getRemainingGenerations());
   const [showAuthWall, setShowAuthWall] = useState(false);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    getOrCreateGuestSession();
-    setGenerationsRemaining(getRemainingGenerations());
+  
+  const sessionId = useMemo(() => {
+    const session = getOrCreateGuestSession();
+    return session.sessionId;
   }, []);
 
-  const handleSubmit = async (data: { videoTitle: string; topic: TemplateCategory; emotion: EmotionType; style: StylePreference }) => {
-    if (!hasRemainingGenerations()) {
-      setShowAuthWall(true);
-      return;
+  const handleThumbnailGenerated = async (
+    backgroundUrl: string,
+    textSuggestions?: TextSuggestions,
+    colorScheme?: string[]
+  ) => {
+    // Increment generations used (only called after successful generation)
+    const session = getOrCreateGuestSession();
+    incrementGuestGenerations();
+    setGenerationsRemaining(getRemainingGenerations());
+
+    // Sync session to server
+    await syncGuestSession(session.sessionId, session.generationsUsed + 1);
+
+    // Create project and redirect to editor
+    const success = await createThumbnailProject(backgroundUrl, textSuggestions, colorScheme);
+    
+    if (!success) {
+      toast.error('Failed to create project');
     }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const session = getOrCreateGuestSession();
-
-      // Map style preference to image style
-      const imageStyle = styleToImageStyle[data.style] || 'cinematic';
-
-      // Generate the image directly
-      const result = await generateImageAndStore({
-        prompt: data.videoTitle,
-        imageStyle,
-        emotion: data.emotion,
-        sessionId: session.sessionId,
-      });
-
-      if (!result.success || !result.backgroundUrl) {
-        throw new Error(result.error || 'Failed to generate thumbnail');
-      }
-
-      incrementGuestGenerations();
-      setGenerationsRemaining(getRemainingGenerations());
-      setGeneratedImageUrl(result.backgroundUrl);
-
-      // Sync session to server
-      await syncGuestSession(session.sessionId, session.generationsUsed + 1);
-
-      // Show auth wall to prompt signup
-      setShowAuthWall(true);
-    } catch (err) {
-      logger.error('Generation error:', { error: err });
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    // Note: If user tries to generate again, onBeforeGenerate will show auth wall
   };
 
-  const noGenerationsLeft = generationsRemaining === 0;
+  const createThumbnailProject = async (
+    backgroundUrl: string,
+    textSuggestions?: TextSuggestions,
+    colorScheme?: string[]
+  ): Promise<boolean> => {
+    return await handleAsyncApiCall(
+      async () => {
+        const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions('16:9');
+        const layers: CanvasLayer[] = [];
+
+        // Add background image layer
+        const bgLayer: ImageLayer = {
+          id: generateImageId(),
+          type: 'image',
+          name: 'Background',
+          x: 0,
+          y: 0,
+          width: canvasWidth,
+          height: canvasHeight,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          opacity: 1,
+          zIndex: 0,
+          visible: true,
+          locked: true,
+          src: backgroundUrl,
+        };
+        layers.push(bgLayer);
+
+        // Get text colors from color scheme or use defaults
+        const textFill = colorScheme?.[2] || '#FFFFFF';
+        const textStroke = colorScheme?.[3] || '#000000';
+
+        // Add headline text layer if suggestions provided
+        if (textSuggestions?.headline) {
+          const headlineLayer: TextLayer = {
+            id: generateLayerId(),
+            type: 'text',
+            name: 'Headline',
+            x: canvasWidth / 2 - 400,
+            y: canvasHeight / 2 - 60,
+            width: 800,
+            height: 120,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 1,
+            zIndex: 1,
+            visible: true,
+            locked: false,
+            text: textSuggestions.headline,
+            fontSize: 72,
+            fontFamily: 'Impact',
+            fontStyle: 'bold',
+            fill: textFill,
+            stroke: textStroke,
+            strokeWidth: 4,
+            align: 'center',
+            verticalAlign: 'middle',
+          };
+          layers.push(headlineLayer);
+        }
+
+        // Add subheadline text layer if provided
+        if (textSuggestions?.subheadline) {
+          const subheadlineLayer: TextLayer = {
+            id: generateLayerId(),
+            type: 'text',
+            name: 'Subheadline',
+            x: canvasWidth / 2 - 300,
+            y: canvasHeight / 2 + 60,
+            width: 600,
+            height: 60,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 1,
+            zIndex: 2,
+            visible: true,
+            locked: false,
+            text: textSuggestions.subheadline,
+            fontSize: 36,
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fill: textFill,
+            stroke: textStroke,
+            strokeWidth: 2,
+            align: 'center',
+            verticalAlign: 'middle',
+          };
+          layers.push(subheadlineLayer);
+        }
+
+        // Create canvas state
+        const canvasState: CanvasState = {
+          width: canvasWidth,
+          height: canvasHeight,
+          layers,
+        };
+
+        // Create project with a meaningful name
+        const projectName = textSuggestions?.headline
+          ? `${textSuggestions.headline} Thumbnail`
+          : 'AI Generated Thumbnail';
+
+        return await createProject({
+          name: projectName,
+          video_title: textSuggestions?.headline || '',
+          canvas_state: canvasState,
+        });
+      },
+      {
+        onSuccess: (project) => {
+          toast.success('Thumbnail created! Opening editor...');
+          router.push(ROUTES.EDITOR(project.id));
+        },
+        onError: (err) => {
+          toast.error(err);
+        },
+      }
+    );
+  };
+
+  // Intercept generation attempts - show auth wall if no generations left
+  const handleBeforeGenerate = (): boolean => {
+    if (!hasRemainingGenerations()) {
+      setShowAuthWall(true);
+      return false;
+    }
+    return true;
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar showGuestBanner generationsRemaining={generationsRemaining} />
 
-      <main className="flex-1 py-8 md:py-12">
-        <div className="container max-w-2xl mx-auto px-4">
-          <div className="text-center mb-8">
-            <Link href={ROUTES.HOME} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4">
-              ← Back to Home
-            </Link>
-            <h1 className="text-3xl md:text-4xl font-bold mb-3">Try AI Thumbnail Generator</h1>
-            <p className="text-muted-foreground">Describe your video and let AI create a stunning thumbnail.</p>
-          </div>
-
-          {noGenerationsLeft && !generatedImageUrl && <TrialUsedCard />}
-
-          {loading && (
-            <Card>
-              <CardContent className="py-12">
-                <LoadingCard message="Creating your thumbnail... This may take up to 30 seconds." />
-              </CardContent>
-            </Card>
-          )}
-
-          {!noGenerationsLeft && !generatedImageUrl && !loading && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Tell us about your video</CardTitle>
-                <CardDescription>Fill in the details and we&apos;ll generate a thumbnail for you.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <GuestAIForm onSubmit={handleSubmit} loading={loading} disabled={noGenerationsLeft} />
-                {error && <div className="mt-4"><InlineError message={error} /></div>}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Generated Image Preview */}
-          {generatedImageUrl && (
-            <Card className="relative overflow-hidden">
-              <CardHeader>
-                <CardTitle className="text-center text-xl">✨ Your Thumbnail Is Ready!</CardTitle>
-                <CardDescription className="text-center">Sign up to access the editor and customize your thumbnail.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-6 rounded-lg overflow-hidden border border-border">
-                  <div className="aspect-video relative">
-                    <Image
-                      src={generatedImageUrl}
-                      alt="Generated thumbnail"
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col items-center gap-3">
-                  <Button
-                    size="lg"
-                    onClick={() => setShowAuthWall(true)}
-                    className="w-full max-w-sm h-14 text-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700"
-                  >
-                    Sign Up to Edit & Download →
-                  </Button>
-                  <p className="text-sm text-muted-foreground">Your thumbnail will be saved to your account</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      <main className="flex-1">
+        <AIThumbnailGenerator
+          onThumbnailGenerated={handleThumbnailGenerated}
+          sessionId={sessionId || undefined}
+          onBeforeGenerate={handleBeforeGenerate}
+        />
       </main>
 
       <Footer />
@@ -162,8 +202,8 @@ export default function TryPage() {
       <AuthWallModal
         open={showAuthWall}
         onOpenChange={setShowAuthWall}
-        title={generatedImageUrl ? 'Your thumbnail is ready!' : 'Sign up to continue'}
-        description={generatedImageUrl ? 'Create an account to access the editor and download your thumbnail.' : 'You need an account to generate more thumbnails.'}
+        title="Sign up to continue"
+        description="You've used your free generation. Create an account to generate unlimited thumbnails and access the editor."
       />
     </div>
   );

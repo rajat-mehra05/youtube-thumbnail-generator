@@ -55,7 +55,7 @@ export const ProjectGrid = ({
           Create your first thumbnail project and start designing!
         </p>
         <Link href={ROUTES.CREATE}>
-          <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-medium hover:from-violet-700 hover:to-fuchsia-700 transition-colors">
+          <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-medium hover:from-violet-700 hover:to-fuchsia-700 transition-colors cursor-pointer">
             <span>+</span> Create New Project
           </button>
         </Link>

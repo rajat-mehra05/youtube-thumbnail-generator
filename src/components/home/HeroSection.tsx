@@ -33,16 +33,16 @@ export const HeroSection = () => (
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link href={ROUTES.TRY}>
-            <Button size="lg" className="h-14 px-8 text-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-lg shadow-violet-500/25">
+            <Button size="lg" className="h-14 px-8 text-lg cursor-pointer bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-lg shadow-violet-500/25">
               ✨ Try Free — No Signup
             </Button>
           </Link>
           <Link href={ROUTES.LOGIN}>
-            <Button size="lg" variant="outline" className="h-14 px-8 text-lg">Get Started</Button>
+            <Button size="lg" variant="outline" className="h-14 cursor-pointer px-8 text-lg">Get Started</Button>
           </Link>
         </div>
-        <p className="text-sm text-muted-foreground mt-6">1 free AI generation • No credit card required</p>
-      </div>
+      <p className="text-sm text-muted-foreground mt-6">1 free AI generation • No credit card required</p>
     </div>
-  </section>
+  </div>
+</section>
 );
