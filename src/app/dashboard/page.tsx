@@ -25,7 +25,8 @@ export default async function DashboardPage() {
   }
 
   // Fetch projects
-  const { projects = [] } = await getProjects();
+  const response = await getProjects();
+  const projects = response.data ?? [];
 
   return (
     <div className="min-h-screen flex flex-col">
