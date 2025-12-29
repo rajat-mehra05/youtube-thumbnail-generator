@@ -2,7 +2,6 @@ import type {
   Project,
   Template,
   Thumbnail,
-  ConceptData,
 } from './index';
 
 /**
@@ -29,7 +28,6 @@ export type TemplatesResponse = ApiResponse<Template[]>;
 export type ThumbnailResponse = ApiResponse<Thumbnail>;
 export type ThumbnailsResponse = ApiResponse<Thumbnail[]>;
 
-export type ConceptResponse = ApiResponse<ConceptData>;
 export type ImageGenerationResponse = ApiResponse<{ imageUrl: string }>;
 export type ImageUploadResponse = ApiResponse<{ backgroundUrl: string }>;
 

@@ -101,42 +101,17 @@ export interface UploadedImage {
 export interface GuestSession {
   sessionId: string;
   generationsUsed: number;
-  generatedConceptId: string | null;
+  generatedImageUrl: string | null;
   createdAt: string;
 }
 
 export interface GuestSessionDB {
   id: string;
   generations_used: number;
-  concept_data: ConceptData | null;
+  image_url: string | null;
   converted_to_user: string | null;
   created_at: string;
   expires_at: string;
-}
-
-// AI Generation types
-export interface ConceptData {
-  headline: string;
-  subheadline?: string;
-  text_position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-  layout_hints?: LayoutHint[];
-  background_prompt: string;
-  color_scheme: string[];
-  style: StylePreference;
-}
-
-export interface LayoutHint {
-  element_type: 'text' | 'image' | 'shape';
-  position: { x: number; y: number };
-  size: { width: number; height: number };
-  z_index: number;
-}
-
-export interface GeneratedConcept {
-  id: string;
-  concept_data: ConceptData;
-  preview_url?: string;
-  created_at: string;
 }
 
 // Canvas state types (Konva-compatible)
@@ -210,30 +185,9 @@ export interface CacheEntry {
   expires_at: string;
 }
 
-// Usage tracking types
-export interface UsageLog {
-  id: string;
-  user_id: string;
-  action_type: 'ai_generation' | 'image_generation' | 'export';
-  credits_used: number;
-  metadata?: Record<string, unknown>;
-  created_at: string;
-}
-
 // API Response types
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
-}
-
-// Form types for AI generation
-export interface AIGenerationFormData {
-  videoTitle: string;
-  topic: TemplateCategory;
-  emotion: EmotionType;
-  style: StylePreference;
-  imageStyle: ImageStyle;
-  aspectRatio: AspectRatio;
-  referenceImageUrl?: string;
 }

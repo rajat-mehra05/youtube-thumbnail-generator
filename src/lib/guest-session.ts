@@ -1,5 +1,5 @@
 import { generateSessionId } from '@/lib/utils/id-generator';
-import type { GuestSession, ConceptData } from '@/types';
+import type { GuestSession } from '@/types';
 import { GUEST_MAX_GENERATIONS } from '@/lib/constants';
 
 const GUEST_SESSION_KEY = 'yt_thumbnail_guest_session';
@@ -40,7 +40,7 @@ export const createGuestSession = (): GuestSession => {
   const session: GuestSession = {
     sessionId: generateSessionId(),
     generationsUsed: 0,
-    generatedConceptId: null,
+    generatedImageUrl: null,
     createdAt: new Date().toISOString(),
   };
 
@@ -95,13 +95,13 @@ export const getRemainingGenerations = (): number => {
 };
 
 /**
- * Store the generated concept ID for transfer on signup
+ * Store the generated image URL for transfer on signup
  */
-export const storeGeneratedConcept = (conceptId: string): void => {
+export const storeGeneratedImage = (imageUrl: string): void => {
   const session = getGuestSession();
   if (!session) return;
 
-  session.generatedConceptId = conceptId;
+  session.generatedImageUrl = imageUrl;
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(session));
@@ -131,22 +131,4 @@ export const clearGuestSession = (): void => {
 export const isGuestMode = (): boolean => {
   const session = getGuestSession();
   return session !== null;
-};
-
-/**
- * Serialize concept data for storage
- */
-export const serializeConceptData = (data: ConceptData): string => {
-  return JSON.stringify(data);
-};
-
-/**
- * Parse concept data from storage
- */
-export const parseConceptData = (data: string): ConceptData | null => {
-  try {
-    return JSON.parse(data) as ConceptData;
-  } catch {
-    return null;
-  }
 };

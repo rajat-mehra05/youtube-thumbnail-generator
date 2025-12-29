@@ -3,6 +3,7 @@
  * No 'any' types allowed in component props
  */
 
+import type { ReactNode, FormEvent } from 'react';
 import type {
   TemplateCategory,
   EmotionType,
@@ -153,13 +154,13 @@ export interface TemplateCardProps {
 export interface AuthWallModalProps {
   isOpen: boolean;
   onClose: () => void;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export interface LoginFormProps {
   onEmailChange: (email: string) => void;
   onPasswordChange: (password: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: FormEvent) => void;
   loading?: boolean;
   error?: string;
 }
@@ -168,7 +169,7 @@ export interface SignupFormProps {
   onFullNameChange: (fullName: string) => void;
   onEmailChange: (email: string) => void;
   onPasswordChange: (password: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: FormEvent) => void;
   loading?: boolean;
   error?: string;
 }

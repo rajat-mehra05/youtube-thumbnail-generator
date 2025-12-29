@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { generateImageId } from '@/lib/utils/id-generator';
+import { generateImageId, generateLayerId } from '@/lib/utils/id-generator';
 import { handleAsyncApiCall } from '@/lib/utils/api-response';
 import { Card, CardContent } from '@/components/ui/card';
 import { Navbar } from '@/components/layout/Navbar';
@@ -13,7 +13,12 @@ import { AIMagicModal } from '@/components/editor/AIMagicModal';
 import { ROUTES, getCanvasDimensions } from '@/lib/constants';
 import { useUser } from '@/hooks';
 import { createProject } from '@/lib/actions/projects';
-import type { CanvasState, ImageLayer } from '@/types';
+import type { CanvasState, ImageLayer, TextLayer, CanvasLayer } from '@/types';
+
+interface TextSuggestions {
+  headline: string;
+  subheadline: string;
+}
 
 export default function CreateAIPage() {
   const router = useRouter();
@@ -21,19 +26,27 @@ export default function CreateAIPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleBackgroundGenerated = async (backgroundUrl: string) => {
+  const handleBackgroundGenerated = async (
+    backgroundUrl: string,
+    textSuggestions?: TextSuggestions,
+    colorScheme?: string[]
+  ) => {
     setError(null);
-    await createThumbnailProject(backgroundUrl);
+    const success = await createThumbnailProject(backgroundUrl, textSuggestions, colorScheme);
+    if (!success) {
+      return;
+    }
   };
 
-  const createThumbnailProject = async (backgroundUrl: string) => {
-    const success = await handleAsyncApiCall(
+  const createThumbnailProject = async (
+    backgroundUrl: string,
+    textSuggestions?: TextSuggestions,
+    colorScheme?: string[]
+  ): Promise<boolean> => {
+    return await handleAsyncApiCall(
       async () => {
-        // Use default 16:9 dimensions for the canvas
         const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions('16:9');
-
-        // Build canvas state with just the background layer
-        const layers: ImageLayer[] = [];
+        const layers: CanvasLayer[] = [];
 
         // Add background image layer
         const bgLayer: ImageLayer = {
@@ -55,35 +68,99 @@ export default function CreateAIPage() {
         };
         layers.push(bgLayer);
 
-        // Create canvas state with background only
+        // Get text colors from color scheme or use defaults
+        const textFill = colorScheme?.[2] || '#FFFFFF';
+        const textStroke = colorScheme?.[3] || '#000000';
+
+        // Add headline text layer if suggestions provided
+        if (textSuggestions?.headline) {
+          const headlineLayer: TextLayer = {
+            id: generateLayerId(),
+            type: 'text',
+            name: 'Headline',
+            x: canvasWidth / 2 - 400,
+            y: canvasHeight / 2 - 60,
+            width: 800,
+            height: 120,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 1,
+            zIndex: 1,
+            visible: true,
+            locked: false,
+            text: textSuggestions.headline,
+            fontSize: 72,
+            fontFamily: 'Impact',
+            fontStyle: 'bold',
+            fill: textFill,
+            stroke: textStroke,
+            strokeWidth: 4,
+            align: 'center',
+            verticalAlign: 'middle',
+          };
+          layers.push(headlineLayer);
+        }
+
+        // Add subheadline text layer if provided
+        if (textSuggestions?.subheadline) {
+          const subheadlineLayer: TextLayer = {
+            id: generateLayerId(),
+            type: 'text',
+            name: 'Subheadline',
+            x: canvasWidth / 2 - 300,
+            y: canvasHeight / 2 + 60,
+            width: 600,
+            height: 60,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+            opacity: 1,
+            zIndex: 2,
+            visible: true,
+            locked: false,
+            text: textSuggestions.subheadline,
+            fontSize: 36,
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fill: textFill,
+            stroke: textStroke,
+            strokeWidth: 2,
+            align: 'center',
+            verticalAlign: 'middle',
+          };
+          layers.push(subheadlineLayer);
+        }
+
+        // Create canvas state
         const canvasState: CanvasState = {
           width: canvasWidth,
           height: canvasHeight,
           layers,
         };
 
-        // Create project with the background
+        // Create project with a meaningful name
+        const projectName = textSuggestions?.headline
+          ? `${textSuggestions.headline} Thumbnail`
+          : 'AI Generated Thumbnail';
+
         return await createProject({
-          name: 'AI Generated Background',
-          video_title: '',
+          name: projectName,
+          video_title: textSuggestions?.headline || '',
           canvas_state: canvasState,
         });
       },
       {
         onSuccess: (project) => {
-          toast.success('Background created! Opening editor...');
+          toast.success('Thumbnail created! Opening editor...');
           router.push(ROUTES.EDITOR(project.id));
         },
-        onError: (error) => {
-          setError(error);
+        onError: (err) => {
+          setError(err);
         },
         setLoading,
       }
     );
-
-    if (!success) {
-      throw new Error('Failed to create project');
-    }
   };
 
   if (userLoading) {
@@ -114,7 +191,7 @@ export default function CreateAIPage() {
               Generate AI Thumbnail
             </h1>
             <p className="text-muted-foreground">
-              Describe what you want and let AI create a stunning background
+              Enter your video title and let AI create a stunning thumbnail
             </p>
           </div>
 
@@ -139,6 +216,7 @@ export default function CreateAIPage() {
                   <button
                     onClick={() => setError(null)}
                     className="px-4 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600"
+                    type="button"
                   >
                     Try Again
                   </button>

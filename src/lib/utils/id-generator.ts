@@ -20,16 +20,6 @@ export const generateProjectId = (): string => `project_${generateId()}`;
 export const generateLayerId = (): string => `layer_${generateId()}`;
 
 /**
- * Generate a thumbnail ID with prefix
- */
-export const generateThumbnailId = (): string => `thumbnail_${generateId()}`;
-
-/**
- * Generate a template ID with prefix
- */
-export const generateTemplateId = (): string => `template_${generateId()}`;
-
-/**
  * Generate an image ID with prefix
  */
 export const generateImageId = (): string => `image_${generateId()}`;
