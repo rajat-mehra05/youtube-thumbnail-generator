@@ -2,7 +2,6 @@
 
 import nextDynamic from 'next/dynamic';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { PreviewModeCard } from './PreviewModeCard';
 import type { CanvasState } from '@/types';
 
 const Canvas = nextDynamic(
@@ -48,9 +47,6 @@ export const GuestCanvasArea = ({ canvasState, onRequireAuth }: GuestCanvasAreaP
                 previewMode={true}
             />
         </div>
-
-        {/* Preview Mode Overlay */}
-        <PreviewModeCard onSignUp={onRequireAuth} />
 
         {/* Zoom indicator */}
         <div className="absolute bottom-6 left-6 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-white/70 font-medium z-30">

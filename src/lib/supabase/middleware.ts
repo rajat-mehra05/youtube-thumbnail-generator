@@ -36,8 +36,12 @@ export const updateSession = async (request: NextRequest) => {
 
   // Define protected routes
   const protectedPaths = ['/dashboard', '/create', '/editor'];
-  const isProtectedPath = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
+  const pathname = request.nextUrl.pathname;
+
+  // Exclude /editor/guest from protection (it's a public guest preview route)
+  const isGuestEditor = pathname === '/editor/guest';
+  const isProtectedPath = !isGuestEditor && protectedPaths.some((path) =>
+    pathname.startsWith(path)
   );
 
   // Redirect to login if accessing protected route without auth
