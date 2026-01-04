@@ -32,10 +32,14 @@ export function LoginContent() {
     setLoading(true);
     setError(null);
     try {
+      // Get origin from window (works in both dev and prod)
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const redirectUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
+          redirectTo: redirectUrl,
           queryParams: { access_type: 'offline', prompt: 'consent' },
         },
       });
@@ -67,11 +71,15 @@ export function LoginContent() {
     setLoading(true);
     setError(null);
     try {
+      // Get origin from window (works in both dev and prod)
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const redirectUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
+          emailRedirectTo: redirectUrl,
           data: { full_name: fullName },
         },
       });

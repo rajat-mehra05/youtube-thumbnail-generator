@@ -20,6 +20,7 @@ interface AuthWallModalProps {
   onOpenChange: (open: boolean) => void;
   title?: string;
   description?: string;
+  redirectTo?: string;
 }
 
 export const AuthWallModal = ({
@@ -27,6 +28,7 @@ export const AuthWallModal = ({
   onOpenChange,
   title = 'Your thumbnail is ready!',
   description = 'Sign up to access your creation and unlock all features.',
+  redirectTo = '/dashboard',
 }: AuthWallModalProps) => {
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
@@ -34,10 +36,14 @@ export const AuthWallModal = ({
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
+      // Get the current origin from the browser (works in both dev and prod)
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const redirectUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=/dashboard`,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -151,7 +157,7 @@ export const AuthWallModal = ({
               )}
             </Button>
 
-            <Link href={`${ROUTES.LOGIN}?mode=signup`} className="block">
+            <Link href={`${ROUTES.LOGIN}?mode=signup&redirect=${encodeURIComponent(redirectTo)}`} className="block">
               <Button
                 className="w-full h-12 text-base bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700"
                 disabled={loading}
@@ -164,7 +170,7 @@ export const AuthWallModal = ({
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link
-              href={ROUTES.LOGIN}
+              href={`${ROUTES.LOGIN}?redirect=${encodeURIComponent(redirectTo)}`}
               className="font-medium text-violet-600 hover:text-violet-500"
             >
               Login
