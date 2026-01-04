@@ -3,3 +3,4 @@ export { ReadOnlyOverlay } from './ReadOnlyOverlay';
 export { PreviewModeCard } from './PreviewModeCard';
 export { GuestCanvasArea } from './GuestCanvasArea';
 export { DisabledEditorPanel } from './DisabledEditorPanel';
+export { GuestSignupPanel } from './GuestSignupPanel';

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getGuestSession } from '@/lib/guest-session';
 import { useCanvasState } from '@/hooks/useCanvasState';
+import { useUser } from '@/hooks/useUser';
 import { LeftSidebar } from '@/components/editor/LeftSidebar';
 import { TopBar } from '@/components/editor/TopBar';
 import { RightPanel } from '@/components/editor/RightPanel';
@@ -13,13 +14,14 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { logger } from '@/lib/utils/logger';
 import {
     GuestCanvasArea,
-    DisabledEditorPanel,
+    GuestSignupPanel,
 } from '@/components/guest';
 
 export default function GuestEditorPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [showAuthWall, setShowAuthWall] = useState(false);
+    const { user, loading: userLoading } = useUser();
 
     const {
         canvasState,
@@ -76,7 +78,10 @@ export default function GuestEditorPage() {
         handleRequireAuth();
     };
 
-    if (loading) {
+    // Check if user is authenticated
+    const isAuthenticated = !!user;
+
+    if (loading || userLoading) {
         return (
             <div className="h-screen flex items-center justify-center bg-background">
                 <LoadingSpinner size="lg" />
@@ -86,7 +91,7 @@ export default function GuestEditorPage() {
 
     return (
         <div className="h-screen flex flex-col bg-background overflow-hidden">
-            {/* Top Bar - Read-only mode */}
+            {/* Top Bar - Read-only mode for guests, full mode for authenticated users */}
             <TopBar
                 projectName={projectName}
                 onNameChange={setProjectName}
@@ -102,13 +107,13 @@ export default function GuestEditorPage() {
 
             {/* Main Editor Area */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Left Sidebar - Disabled */}
-                <DisabledEditorPanel onSignUp={handleRequireAuth}>
+                {/* Left Sidebar - Only show when authenticated */}
+                {isAuthenticated && (
                     <LeftSidebar
                         onAddLayer={handleRequireAuth}
                         onOpenAI={handleRequireAuth}
                     />
-                </DisabledEditorPanel>
+                )}
 
                 {/* Canvas Area */}
                 <GuestCanvasArea
@@ -116,8 +121,8 @@ export default function GuestEditorPage() {
                     onRequireAuth={handleRequireAuth}
                 />
 
-                {/* Right Panel - Disabled */}
-                <DisabledEditorPanel onSignUp={handleRequireAuth}>
+                {/* Right Panel - Show signup panel when not authenticated, editor panel when authenticated */}
+                {isAuthenticated ? (
                     <RightPanel
                         layers={canvasState.layers}
                         selectedLayerId={null}
@@ -129,16 +134,18 @@ export default function GuestEditorPage() {
                         onToggleVisibility={handleToggleVisibility}
                         onToggleLock={handleToggleLock}
                     />
-                </DisabledEditorPanel>
+                ) : (
+                    <GuestSignupPanel />
+                )}
             </div>
 
-            {/* Auth Wall Modal */}
+            {/* Auth Wall Modal - Only show when user tries to interact */}
             <AuthWallModal
                 open={showAuthWall}
                 onOpenChange={setShowAuthWall}
                 title="Sign up to edit your thumbnail"
                 description="Create a free account to unlock full editing features, save your projects, and export your designs."
-                redirectTo="/dashboard"
+                redirectTo="/editor/guest"
             />
         </div>
     );
