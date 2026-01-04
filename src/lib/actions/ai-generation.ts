@@ -1,14 +1,48 @@
 'use server';
 
-import OpenAI from 'openai';
+import { GoogleGenAI } from '@google/genai';
 import type { ImageStyle, AspectRatio, EmotionType } from '@/types';
 import { generateCacheKey, checkCache, storeInCache } from './cache';
 import { processImageForStorage, uploadToSupabaseStorage, generateImageFilename } from '@/lib/utils/image-processing';
 import { buildThumbnailPrompt, sanitizePrompt } from '@/lib/utils/prompt-builder';
-import { AI_DEFAULTS, DALLE_CONFIG, DEFAULT_COLOR_SCHEME } from '@/lib/constants/ai-constants';
+import { AI_DEFAULTS, GEMINI_CONFIG, DEFAULT_COLOR_SCHEME } from '@/lib/constants/ai-constants';
 import { logger } from '@/lib/utils/logger';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
+/**
+ * Get and validate Gemini API key from environment variables
+ * Throws an error if no valid API key is found
+ */
+const getGeminiApiKey = (): string => {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+  if (!apiKey || apiKey.trim() === '') {
+    const errorMessage = 'Gemini API key is missing. Please set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY environment variable.';
+    logger.error('Gemini API key validation failed:', {
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY ? 'set (empty)' : 'not set',
+      GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY ? 'set (empty)' : 'not set'
+    });
+    throw new Error(errorMessage);
+  }
+
+  return apiKey.trim();
+};
+
+/**
+ * Convert File to base64 string for Gemini API
+ */
+const fileToBase64 = async (file: File): Promise<{ data: string; mimeType: string }> => {
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const base64 = buffer.toString('base64');
+  const mimeType = file.type || 'image/png';
+
+  return { data: base64, mimeType };
+};
+
+// Initialize Gemini client with validated API key (fails fast if key is missing)
+const genAI = new GoogleGenAI({
+  apiKey: getGeminiApiKey()
+});
 
 // Types
 export interface GenerateImageInput {
@@ -41,12 +75,7 @@ export const generateTextSuggestionsAI = async (
   const fallback = { headline: '', subheadline: '' };
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a YouTube thumbnail text expert. Generate short, impactful text for thumbnails.
+    const systemPrompt = `You are a YouTube thumbnail text expert. Generate short, impactful text for thumbnails.
 
 RULES:
 - HEADLINE: 2-8 words max, punchy and attention-grabbing, ALL CAPS works great
@@ -58,25 +87,33 @@ RULES:
 - For entertainment: emphasize drama, humor, or shock value
 - For educational: emphasize the key insight or benefit
 
-Respond ONLY with valid JSON: {"headline": "YOUR TEXT", "subheadline": "OPTIONAL TEXT"}`
-        },
-        {
-          role: 'user',
-          content: `Generate thumbnail text for this video: "${prompt}"`
-        }
-      ],
-      temperature: 0.8,
-      max_tokens: 100,
+Respond ONLY with valid JSON: {"headline": "YOUR TEXT", "subheadline": "OPTIONAL TEXT"}`;
+
+    const fullPrompt = `${systemPrompt}\n\nGenerate thumbnail text for this video: "${prompt}"`;
+
+    const response = await genAI.models.generateContent({
+      model: GEMINI_CONFIG.TEXT_MODEL,
+      contents: fullPrompt,
     });
 
-    const content = response.choices[0]?.message?.content?.trim();
-    if (!content) return fallback;
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!text) return fallback;
 
-    // Parse JSON response
-    const parsed = JSON.parse(content);
+    // Try to parse JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        headline: parsed.headline || '',
+        subheadline: parsed.subheadline || '',
+      };
+    }
+
+    // Fallback: extract key words
+    const words = prompt.split(' ').filter(w => w.length > 2).slice(0, 4);
     return {
-      headline: parsed.headline || '',
-      subheadline: parsed.subheadline || '',
+      headline: words.join(' ').toUpperCase(),
+      subheadline: '',
     };
   } catch (error) {
     logger.error('AI text generation failed:', { error });
@@ -90,7 +127,7 @@ Respond ONLY with valid JSON: {"headline": "YOUR TEXT", "subheadline": "OPTIONAL
 };
 
 /**
- * Generate an image using DALL-E 3
+ * Generate an image using Gemini 2.5 Flash Image
  */
 export const generateImage = async (
   input: GenerateImageInput
@@ -121,30 +158,75 @@ export const generateImage = async (
     // Build the enhanced prompt
     const enhancedPrompt = buildThumbnailPrompt(sanitizedPrompt, imageStyle, emotion, !!input.referenceImage);
 
-    logger.info('Generating image with DALL-E...', {
+    logger.info('Generating image with Gemini 2.5 Flash...', {
       userPrompt: sanitizedPrompt.substring(0, 50),
       imageStyle,
       emotion,
-      aspectRatio
+      aspectRatio,
+      hasReferenceImage: !!input.referenceImage
     });
 
-    // Determine DALL-E image size based on aspect ratio
-    const { getDallESize } = await import('@/lib/constants');
-    const dallESize = getDallESize(aspectRatio);
+    // Build contents array with text and optionally reference image
+    const contents: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [
+      { text: enhancedPrompt }
+    ];
 
-    const response = await openai.images.generate({
-      model: DALLE_CONFIG.MODEL,
-      prompt: enhancedPrompt,
-      n: 1,
-      size: dallESize,
-      quality: DALLE_CONFIG.QUALITY,
-      style: DALLE_CONFIG.STYLE,
-    });
-
-    const imageUrl = response.data?.[0]?.url;
-    if (!imageUrl) {
-      throw new Error('No image generated from DALL-E');
+    // Add reference image if provided
+    if (input.referenceImage) {
+      logger.debug('Converting reference image to base64...');
+      const imageData = await fileToBase64(input.referenceImage);
+      contents.push({
+        inlineData: {
+          mimeType: imageData.mimeType,
+          data: imageData.data
+        }
+      });
+      logger.debug('Reference image added to request', {
+        mimeType: imageData.mimeType,
+        dataLength: imageData.data.length
+      });
     }
+
+    // Generate image using Gemini
+    const response = await genAI.models.generateContent({
+      model: GEMINI_CONFIG.IMAGE_MODEL,
+      contents,
+    });
+
+    // Extract image from response
+    const candidates = response.candidates;
+    if (!candidates || candidates.length === 0) {
+      throw new Error('No candidates in Gemini response');
+    }
+
+    const firstCandidate = candidates[0];
+    if (!firstCandidate?.content?.parts) {
+      throw new Error('No parts in Gemini response');
+    }
+
+    const parts = firstCandidate.content.parts;
+    if (parts.length === 0) {
+      throw new Error('No parts in Gemini response');
+    }
+
+    // Find the image part
+    let imageData: string | null = null;
+    let mimeType: string = 'image/png';
+
+    for (const part of parts) {
+      if (part.inlineData?.data) {
+        imageData = part.inlineData.data;
+        mimeType = part.inlineData.mimeType || 'image/png';
+        break;
+      }
+    }
+
+    if (!imageData) {
+      throw new Error('No image data found in Gemini response');
+    }
+
+    // Convert base64 to data URL
+    const imageUrl = `data:${mimeType};base64,${imageData}`;
 
     // Cache the result (only if we have a cache key)
     if (cacheKey) {
@@ -175,11 +257,11 @@ export const generateThumbnailComplete = async (
       return { success: false, error: imageResult.error || 'Failed to generate image' };
     }
 
-    const dallEUrl = imageResult.imageUrl;
-    logger.imageGeneration(dallEUrl.substring(0, 50));
+    const geminiImageUrl = imageResult.imageUrl;
+    logger.imageGeneration(geminiImageUrl.substring(0, 50));
 
     // Process and store the image
-    const processResult = await processImageForStorage(dallEUrl);
+    const processResult = await processImageForStorage(geminiImageUrl);
     if (!processResult.success) {
       return { success: false, error: processResult.error || 'Failed to process image' };
     }
