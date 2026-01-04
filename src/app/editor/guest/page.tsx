@@ -23,9 +23,6 @@ export default function GuestEditorPage() {
 
     const {
         canvasState,
-        moveLayer,
-        toggleVisibility,
-        toggleLock,
         loadState,
     } = useCanvasState();
 
@@ -63,6 +60,20 @@ export default function GuestEditorPage() {
     // Single handler for all read-only actions - shows auth wall
     const handleRequireAuth = () => {
         setShowAuthWall(true);
+    };
+
+    // Wrapper handlers that match expected signatures but block guest actions
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const handleMoveLayer = (_id: string, _direction: 'up' | 'down') => {
+        handleRequireAuth();
+    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const handleToggleVisibility = (_id: string) => {
+        handleRequireAuth();
+    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const handleToggleLock = (_id: string) => {
+        handleRequireAuth();
     };
 
     if (loading) {
@@ -114,9 +125,9 @@ export default function GuestEditorPage() {
                         onSelectLayer={() => { }}
                         onUpdateLayer={handleRequireAuth}
                         onDeleteLayer={handleRequireAuth}
-                        onMoveLayer={moveLayer}
-                        onToggleVisibility={toggleVisibility}
-                        onToggleLock={toggleLock}
+                        onMoveLayer={handleMoveLayer}
+                        onToggleVisibility={handleToggleVisibility}
+                        onToggleLock={handleToggleLock}
                     />
                 </DisabledEditorPanel>
             </div>

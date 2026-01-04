@@ -52,10 +52,18 @@ export const getGuestSessionFromServer = async (sessionId: string) => {
 
 /**
  * Transfer guest session data to a new user account
+ * @param sessionId - The guest session ID to transfer
+ * @param userId - The user ID to transfer the data to
+ * @param canvasState - Optional canvas state to set atomically during project creation
+ * @param projectName - Optional project name (defaults to 'My First Thumbnail')
+ * @param videoTitle - Optional video title (defaults to empty string)
  */
 export const transferGuestDataToUser = async (
   sessionId: string,
-  userId: string
+  userId: string,
+  canvasState?: import('@/types').CanvasState | null,
+  projectName?: string,
+  videoTitle?: string
 ) => {
   const supabase = await createAdminClient();
 
@@ -70,23 +78,19 @@ export const transferGuestDataToUser = async (
     return { success: false, error: 'Guest session not found', projectId: null };
   }
 
-  // Try to get canvas state from localStorage (client-side only)
-  // Note: This function is called server-side, so we need to pass canvas state from client
-  // For now, we'll create a project with the image URL and let the client update it
-  // The client should call this with canvas state stored separately
-
   // If there's an image URL, create a project for the user
   if (guestSession.image_url) {
-    // Create a new project - canvas state will be set by client if available
-    const projectName = 'My First Thumbnail';
+    // Create a new project with canvas state set atomically if provided
+    const finalProjectName = projectName || 'My First Thumbnail';
+    const finalVideoTitle = videoTitle || '';
 
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .insert({
         user_id: userId,
-        name: projectName,
-        video_title: '',
-        canvas_state: null, // Will be populated by client with localStorage data
+        name: finalProjectName,
+        video_title: finalVideoTitle,
+        canvas_state: canvasState || null,
       })
       .select()
       .single();

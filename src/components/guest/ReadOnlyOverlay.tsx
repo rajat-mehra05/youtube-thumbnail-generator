@@ -5,8 +5,8 @@ interface ReadOnlyOverlayProps {
 }
 
 export const ReadOnlyOverlay = ({ onSignUp }: ReadOnlyOverlayProps) => (
-    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center">
-        <div className="text-center p-4">
+    <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-none">
+        <div className="text-center p-4 pointer-events-auto">
             <p className="text-sm font-medium mb-2">Sign up to edit</p>
             <p className="text-xs text-muted-foreground">
                 Create an account to unlock editing features

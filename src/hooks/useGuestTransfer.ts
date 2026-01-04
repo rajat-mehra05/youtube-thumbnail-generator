@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
 import { getGuestSessionId, clearGuestSession, getGuestSession } from '@/lib/guest-session';
 import { transferGuestDataToUser } from '@/lib/actions/guest-session';
-import { updateProject } from '@/lib/actions/projects';
 import { ROUTES } from '@/lib/constants';
 
 /**
@@ -40,27 +39,22 @@ export const useGuestTransfer = () => {
       setTransferring(true);
 
       try {
-        // Transfer guest data to user (creates project)
-        const result = await transferGuestDataToUser(guestSessionId, user.id);
+        // Prepare project metadata from guest session
+        const projectName = guestSession.textSuggestions?.headline
+          ? `${guestSession.textSuggestions.headline} Thumbnail`
+          : 'My First Thumbnail';
+        const videoTitle = guestSession.textSuggestions?.headline || '';
+
+        // Transfer guest data to user (creates project atomically with canvas state)
+        const result = await transferGuestDataToUser(
+          guestSessionId,
+          user.id,
+          guestSession.canvasState || null,
+          projectName,
+          videoTitle
+        );
 
         if (result.success && result.projectId) {
-          // Update project with canvas state if available
-          if (guestSession.canvasState) {
-            const projectName = guestSession.textSuggestions?.headline
-              ? `${guestSession.textSuggestions.headline} Thumbnail`
-              : 'My First Thumbnail';
-
-            const updateResult = await updateProject(result.projectId, {
-              name: projectName,
-              video_title: guestSession.textSuggestions?.headline || '',
-              canvas_state: guestSession.canvasState,
-            });
-
-            if (!updateResult.success) {
-              logger.error('Failed to update project with canvas state:', { error: updateResult.error });
-            }
-          }
-
           // Clear the guest session
           clearGuestSession();
           setTransferred(true);

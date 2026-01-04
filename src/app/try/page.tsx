@@ -33,12 +33,36 @@ export default function TryPage() {
     textSuggestions?: TextSuggestions,
     colorScheme?: string[]
   ) => {
-    // Increment generations used (only called after successful generation)
-    incrementGuestGenerations();
-    setGenerationsRemaining(getRemainingGenerations());
+    // Ensure session exists before incrementing
+    getOrCreateGuestSession();
 
-    // Get updated session
-    const session = getOrCreateGuestSession();
+    // Increment generations used (only called after successful generation)
+    // This returns the updated session with incremented generationsUsed
+    const updatedSession = incrementGuestGenerations();
+
+    if (!updatedSession) {
+      // This should not happen since we ensured session exists above,
+      // but handle gracefully just in case
+      const session = getOrCreateGuestSession();
+      setGenerationsRemaining(getRemainingGenerations());
+
+      // Create canvas state for guest
+      const canvasState = createCanvasState(backgroundUrl, textSuggestions, colorScheme);
+
+      // Store canvas state in guest session
+      updateGuestSessionCanvas(canvasState, textSuggestions || undefined);
+
+      // Sync session to server (with image URL)
+      await syncGuestSession(session.sessionId, session.generationsUsed, backgroundUrl);
+
+      // Redirect to guest editor
+      toast.success('Thumbnail generated! Opening editor...');
+      router.push('/editor/guest');
+      return;
+    }
+
+    // Use the updated session from incrementGuestGenerations
+    setGenerationsRemaining(getRemainingGenerations());
 
     // Create canvas state for guest
     const canvasState = createCanvasState(backgroundUrl, textSuggestions, colorScheme);
@@ -46,8 +70,8 @@ export default function TryPage() {
     // Store canvas state in guest session
     updateGuestSessionCanvas(canvasState, textSuggestions || undefined);
 
-    // Sync session to server (with image URL)
-    await syncGuestSession(session.sessionId, session.generationsUsed, backgroundUrl);
+    // Sync session to server (with image URL) using the updated session
+    await syncGuestSession(updatedSession.sessionId, updatedSession.generationsUsed, backgroundUrl);
 
     // Redirect to guest editor
     toast.success('Thumbnail generated! Opening editor...');
