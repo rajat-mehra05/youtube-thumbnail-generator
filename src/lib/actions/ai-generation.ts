@@ -8,8 +8,40 @@ import { buildThumbnailPrompt, sanitizePrompt } from '@/lib/utils/prompt-builder
 import { AI_DEFAULTS, GEMINI_CONFIG, DEFAULT_COLOR_SCHEME } from '@/lib/constants/ai-constants';
 import { logger } from '@/lib/utils/logger';
 
+/**
+ * Get and validate Gemini API key from environment variables
+ * Throws an error if no valid API key is found
+ */
+const getGeminiApiKey = (): string => {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+  if (!apiKey || apiKey.trim() === '') {
+    const errorMessage = 'Gemini API key is missing. Please set GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY environment variable.';
+    logger.error('Gemini API key validation failed:', {
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY ? 'set (empty)' : 'not set',
+      GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY ? 'set (empty)' : 'not set'
+    });
+    throw new Error(errorMessage);
+  }
+
+  return apiKey.trim();
+};
+
+/**
+ * Convert File to base64 string for Gemini API
+ */
+const fileToBase64 = async (file: File): Promise<{ data: string; mimeType: string }> => {
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  const base64 = buffer.toString('base64');
+  const mimeType = file.type || 'image/png';
+
+  return { data: base64, mimeType };
+};
+
+// Initialize Gemini client with validated API key (fails fast if key is missing)
 const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || ''
+  apiKey: getGeminiApiKey()
 });
 
 // Types
@@ -130,13 +162,35 @@ export const generateImage = async (
       userPrompt: sanitizedPrompt.substring(0, 50),
       imageStyle,
       emotion,
-      aspectRatio
+      aspectRatio,
+      hasReferenceImage: !!input.referenceImage
     });
+
+    // Build contents array with text and optionally reference image
+    const contents: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [
+      { text: enhancedPrompt }
+    ];
+
+    // Add reference image if provided
+    if (input.referenceImage) {
+      logger.debug('Converting reference image to base64...');
+      const imageData = await fileToBase64(input.referenceImage);
+      contents.push({
+        inlineData: {
+          mimeType: imageData.mimeType,
+          data: imageData.data
+        }
+      });
+      logger.debug('Reference image added to request', {
+        mimeType: imageData.mimeType,
+        dataLength: imageData.data.length
+      });
+    }
 
     // Generate image using Gemini
     const response = await genAI.models.generateContent({
       model: GEMINI_CONFIG.IMAGE_MODEL,
-      contents: enhancedPrompt,
+      contents,
     });
 
     // Extract image from response
