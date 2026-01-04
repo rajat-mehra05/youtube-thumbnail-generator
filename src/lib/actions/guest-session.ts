@@ -59,7 +59,7 @@ export const transferGuestDataToUser = async (
 ) => {
   const supabase = await createAdminClient();
 
-  // Get the guest session
+  // Get the guest session from server
   const { data: guestSession, error: fetchError } = await supabase
     .from('guest_sessions')
     .select('*')
@@ -70,16 +70,23 @@ export const transferGuestDataToUser = async (
     return { success: false, error: 'Guest session not found', projectId: null };
   }
 
+  // Try to get canvas state from localStorage (client-side only)
+  // Note: This function is called server-side, so we need to pass canvas state from client
+  // For now, we'll create a project with the image URL and let the client update it
+  // The client should call this with canvas state stored separately
+
   // If there's an image URL, create a project for the user
   if (guestSession.image_url) {
-    // Create a new project with the generated image
+    // Create a new project - canvas state will be set by client if available
+    const projectName = 'My First Thumbnail';
+
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .insert({
         user_id: userId,
-        name: 'My First Thumbnail',
+        name: projectName,
         video_title: '',
-        canvas_state: null, // Will be populated when they edit
+        canvas_state: null, // Will be populated by client with localStorage data
       })
       .select()
       .single();

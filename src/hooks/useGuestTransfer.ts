@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { logger } from '@/lib/utils/logger';
-import { getGuestSessionId, clearGuestSession } from '@/lib/guest-session';
+import { getGuestSessionId, clearGuestSession, getGuestSession } from '@/lib/guest-session';
 import { transferGuestDataToUser } from '@/lib/actions/guest-session';
+import { updateProject } from '@/lib/actions/projects';
 import { ROUTES } from '@/lib/constants';
 
 /**
@@ -25,6 +26,10 @@ export const useGuestTransfer = () => {
       const guestSessionId = getGuestSessionId();
       if (!guestSessionId) return;
 
+      // Get guest session data (including canvas state from localStorage)
+      const guestSession = getGuestSession();
+      if (!guestSession) return;
+
       // Get current user
       const {
         data: { user },
@@ -35,19 +40,38 @@ export const useGuestTransfer = () => {
       setTransferring(true);
 
       try {
-        // Transfer guest data to user
+        // Transfer guest data to user (creates project)
         const result = await transferGuestDataToUser(guestSessionId, user.id);
 
-        if (result.success) {
+        if (result.success && result.projectId) {
+          // Update project with canvas state if available
+          if (guestSession.canvasState) {
+            const projectName = guestSession.textSuggestions?.headline
+              ? `${guestSession.textSuggestions.headline} Thumbnail`
+              : 'My First Thumbnail';
+
+            const updateResult = await updateProject(result.projectId, {
+              name: projectName,
+              video_title: guestSession.textSuggestions?.headline || '',
+              canvas_state: guestSession.canvasState,
+            });
+
+            if (!updateResult.success) {
+              logger.error('Failed to update project with canvas state:', { error: updateResult.error });
+            }
+          }
+
           // Clear the guest session
           clearGuestSession();
           setTransferred(true);
+          setProjectId(result.projectId);
 
-          if (result.projectId) {
-            setProjectId(result.projectId);
-            // Optionally redirect to the editor with the new project
-            router.push(ROUTES.EDITOR(result.projectId));
-          }
+          // Redirect to the editor with the new project
+          router.push(ROUTES.EDITOR(result.projectId));
+        } else if (result.success) {
+          // No project created, just clear session
+          clearGuestSession();
+          setTransferred(true);
         }
       } catch (error) {
         logger.error('Guest transfer error:', { error });

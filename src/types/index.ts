@@ -102,6 +102,11 @@ export interface GuestSession {
   sessionId: string;
   generationsUsed: number;
   generatedImageUrl: string | null;
+  canvasState: CanvasState | null;
+  textSuggestions: {
+    headline?: string;
+    subheadline?: string;
+  } | null;
   createdAt: string;
 }
 
