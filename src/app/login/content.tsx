@@ -12,11 +12,14 @@ import { InlineError } from '@/components/ui/error-message';
 import { SuccessMessage } from '@/components/ui/SuccessMessage';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { GoogleButton, LoginForm, SignupForm } from '@/components/auth';
+import { validateRedirectPath, getSafeOrigin } from '@/lib/utils/validation';
 
 export function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || ROUTES.DASHBOARD;
+  const redirectParam = searchParams.get('redirect');
+  // Validate and sanitize redirect path to prevent open redirects
+  const redirectTo = validateRedirectPath(redirectParam, ROUTES.DASHBOARD);
   const defaultMode = searchParams.get('mode') || 'login';
 
   const [loading, setLoading] = useState(false);
@@ -33,7 +36,8 @@ export function LoginContent() {
     setError(null);
     try {
       // Get origin from window (works in both dev and prod)
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      // This will be localhost in dev, production domain in prod - always correct
+      const origin = getSafeOrigin();
       const redirectUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
 
       const { error } = await supabase.auth.signInWithOAuth({
@@ -72,7 +76,8 @@ export function LoginContent() {
     setError(null);
     try {
       // Get origin from window (works in both dev and prod)
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      // This will be localhost in dev, production domain in prod - always correct
+      const origin = getSafeOrigin();
       const redirectUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
 
       const { error } = await supabase.auth.signUp({
