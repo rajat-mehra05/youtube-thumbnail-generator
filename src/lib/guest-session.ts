@@ -41,6 +41,8 @@ export const createGuestSession = (): GuestSession => {
     sessionId: generateSessionId(),
     generationsUsed: 0,
     generatedImageUrl: null,
+    canvasState: null,
+    textSuggestions: null,
     createdAt: new Date().toISOString(),
   };
 
@@ -100,6 +102,27 @@ export const getRemainingGenerations = (): number => {
 export const getGuestSessionId = (): string | null => {
   const session = getGuestSession();
   return session?.sessionId || null;
+};
+
+/**
+ * Update guest session with canvas state
+ */
+export const updateGuestSessionCanvas = (
+  canvasState: import('@/types').CanvasState,
+  textSuggestions?: { headline?: string; subheadline?: string }
+): GuestSession | null => {
+  const session = getGuestSession();
+  if (!session) return null;
+
+  session.canvasState = canvasState;
+  session.textSuggestions = textSuggestions || null;
+  session.generatedImageUrl = canvasState.layers.find(l => l.type === 'image')?.src || null;
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(session));
+  }
+
+  return session;
 };
 
 /**

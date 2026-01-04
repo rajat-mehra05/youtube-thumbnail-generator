@@ -4,15 +4,13 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { generateImageId, generateLayerId } from '@/lib/utils/id-generator';
-import { handleAsyncApiCall } from '@/lib/utils/api-response';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { AIThumbnailGenerator } from '@/components/create/AIThumbnailGenerator';
 import { AuthWallModal } from '@/components/auth/AuthWallModal';
-import { ROUTES, getCanvasDimensions } from '@/lib/constants';
-import { getOrCreateGuestSession, getRemainingGenerations, hasRemainingGenerations, incrementGuestGenerations } from '@/lib/guest-session';
+import { getCanvasDimensions } from '@/lib/constants';
+import { getOrCreateGuestSession, getRemainingGenerations, hasRemainingGenerations, incrementGuestGenerations, updateGuestSessionCanvas } from '@/lib/guest-session';
 import { syncGuestSession } from '@/lib/actions/guest-session';
-import { createProject } from '@/lib/actions/projects';
 import type { CanvasState, ImageLayer, TextLayer, CanvasLayer } from '@/types';
 
 interface TextSuggestions {
@@ -24,7 +22,7 @@ export default function TryPage() {
   const router = useRouter();
   const [generationsRemaining, setGenerationsRemaining] = useState(() => getRemainingGenerations());
   const [showAuthWall, setShowAuthWall] = useState(false);
-  
+
   const sessionId = useMemo(() => {
     const session = getOrCreateGuestSession();
     return session.sessionId;
@@ -35,145 +33,149 @@ export default function TryPage() {
     textSuggestions?: TextSuggestions,
     colorScheme?: string[]
   ) => {
+    // Ensure session exists before incrementing
+    getOrCreateGuestSession();
+
     // Increment generations used (only called after successful generation)
-    const session = getOrCreateGuestSession();
-    incrementGuestGenerations();
+    // This returns the updated session with incremented generationsUsed
+    const updatedSession = incrementGuestGenerations();
+
+    if (!updatedSession) {
+      // This should not happen since we ensured session exists above,
+      // but handle gracefully just in case
+      const session = getOrCreateGuestSession();
+      setGenerationsRemaining(getRemainingGenerations());
+
+      // Create canvas state for guest
+      const canvasState = createCanvasState(backgroundUrl, textSuggestions, colorScheme);
+
+      // Store canvas state in guest session
+      updateGuestSessionCanvas(canvasState, textSuggestions || undefined);
+
+      // Sync session to server (with image URL)
+      await syncGuestSession(session.sessionId, session.generationsUsed, backgroundUrl);
+
+      // Redirect to guest editor
+      toast.success('Thumbnail generated! Opening editor...');
+      router.push('/editor/guest');
+      return;
+    }
+
+    // Use the updated session from incrementGuestGenerations
     setGenerationsRemaining(getRemainingGenerations());
 
-    // Sync session to server
-    await syncGuestSession(session.sessionId, session.generationsUsed + 1);
+    // Create canvas state for guest
+    const canvasState = createCanvasState(backgroundUrl, textSuggestions, colorScheme);
 
-    // Create project and redirect to editor
-    const success = await createThumbnailProject(backgroundUrl, textSuggestions, colorScheme);
-    
-    if (!success) {
-      toast.error('Failed to create project');
-    }
-    // Note: If user tries to generate again, onBeforeGenerate will show auth wall
+    // Store canvas state in guest session
+    updateGuestSessionCanvas(canvasState, textSuggestions || undefined);
+
+    // Sync session to server (with image URL) using the updated session
+    await syncGuestSession(updatedSession.sessionId, updatedSession.generationsUsed, backgroundUrl);
+
+    // Redirect to guest editor
+    toast.success('Thumbnail generated! Opening editor...');
+    router.push('/editor/guest');
   };
 
-  const createThumbnailProject = async (
+  const createCanvasState = (
     backgroundUrl: string,
     textSuggestions?: TextSuggestions,
     colorScheme?: string[]
-  ): Promise<boolean> => {
-    return await handleAsyncApiCall(
-      async () => {
-        const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions('16:9');
-        const layers: CanvasLayer[] = [];
+  ): CanvasState => {
+    const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions('16:9');
+    const layers: CanvasLayer[] = [];
 
-        // Add background image layer
-        const bgLayer: ImageLayer = {
-          id: generateImageId(),
-          type: 'image',
-          name: 'Background',
-          x: 0,
-          y: 0,
-          width: canvasWidth,
-          height: canvasHeight,
-          rotation: 0,
-          scaleX: 1,
-          scaleY: 1,
-          opacity: 1,
-          zIndex: 0,
-          visible: true,
-          locked: true,
-          src: backgroundUrl,
-        };
-        layers.push(bgLayer);
+    // Add background image layer
+    const bgLayer: ImageLayer = {
+      id: generateImageId(),
+      type: 'image',
+      name: 'Background',
+      x: 0,
+      y: 0,
+      width: canvasWidth,
+      height: canvasHeight,
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+      opacity: 1,
+      zIndex: 0,
+      visible: true,
+      locked: true,
+      src: backgroundUrl,
+    };
+    layers.push(bgLayer);
 
-        // Get text colors from color scheme or use defaults
-        const textFill = colorScheme?.[2] || '#FFFFFF';
-        const textStroke = colorScheme?.[3] || '#000000';
+    // Get text colors from color scheme or use defaults
+    const textFill = colorScheme?.[2] || '#FFFFFF';
+    const textStroke = colorScheme?.[3] || '#000000';
 
-        // Add headline text layer if suggestions provided
-        if (textSuggestions?.headline) {
-          const headlineLayer: TextLayer = {
-            id: generateLayerId(),
-            type: 'text',
-            name: 'Headline',
-            x: canvasWidth / 2 - 400,
-            y: canvasHeight / 2 - 60,
-            width: 800,
-            height: 120,
-            rotation: 0,
-            scaleX: 1,
-            scaleY: 1,
-            opacity: 1,
-            zIndex: 1,
-            visible: true,
-            locked: false,
-            text: textSuggestions.headline,
-            fontSize: 72,
-            fontFamily: 'Impact',
-            fontStyle: 'bold',
-            fill: textFill,
-            stroke: textStroke,
-            strokeWidth: 4,
-            align: 'center',
-            verticalAlign: 'middle',
-          };
-          layers.push(headlineLayer);
-        }
+    // Add headline text layer if suggestions provided
+    if (textSuggestions?.headline) {
+      const headlineLayer: TextLayer = {
+        id: generateLayerId(),
+        type: 'text',
+        name: 'Headline',
+        x: canvasWidth / 2 - 400,
+        y: canvasHeight / 2 - 60,
+        width: 800,
+        height: 120,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        opacity: 1,
+        zIndex: 1,
+        visible: true,
+        locked: false,
+        text: textSuggestions.headline,
+        fontSize: 72,
+        fontFamily: 'Impact',
+        fontStyle: 'bold',
+        fill: textFill,
+        stroke: textStroke,
+        strokeWidth: 4,
+        align: 'center',
+        verticalAlign: 'middle',
+      };
+      layers.push(headlineLayer);
+    }
 
-        // Add subheadline text layer if provided
-        if (textSuggestions?.subheadline) {
-          const subheadlineLayer: TextLayer = {
-            id: generateLayerId(),
-            type: 'text',
-            name: 'Subheadline',
-            x: canvasWidth / 2 - 300,
-            y: canvasHeight / 2 + 60,
-            width: 600,
-            height: 60,
-            rotation: 0,
-            scaleX: 1,
-            scaleY: 1,
-            opacity: 1,
-            zIndex: 2,
-            visible: true,
-            locked: false,
-            text: textSuggestions.subheadline,
-            fontSize: 36,
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
-            fill: textFill,
-            stroke: textStroke,
-            strokeWidth: 2,
-            align: 'center',
-            verticalAlign: 'middle',
-          };
-          layers.push(subheadlineLayer);
-        }
+    // Add subheadline text layer if provided
+    if (textSuggestions?.subheadline) {
+      const subheadlineLayer: TextLayer = {
+        id: generateLayerId(),
+        type: 'text',
+        name: 'Subheadline',
+        x: canvasWidth / 2 - 300,
+        y: canvasHeight / 2 + 60,
+        width: 600,
+        height: 60,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        opacity: 1,
+        zIndex: 2,
+        visible: true,
+        locked: false,
+        text: textSuggestions.subheadline,
+        fontSize: 36,
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        fill: textFill,
+        stroke: textStroke,
+        strokeWidth: 2,
+        align: 'center',
+        verticalAlign: 'middle',
+      };
+      layers.push(subheadlineLayer);
+    }
 
-        // Create canvas state
-        const canvasState: CanvasState = {
-          width: canvasWidth,
-          height: canvasHeight,
-          layers,
-        };
-
-        // Create project with a meaningful name
-        const projectName = textSuggestions?.headline
-          ? `${textSuggestions.headline} Thumbnail`
-          : 'AI Generated Thumbnail';
-
-        return await createProject({
-          name: projectName,
-          video_title: textSuggestions?.headline || '',
-          canvas_state: canvasState,
-        });
-      },
-      {
-        onSuccess: (project) => {
-          toast.success('Thumbnail created! Opening editor...');
-          router.push(ROUTES.EDITOR(project.id));
-        },
-        onError: (err) => {
-          toast.error(err);
-        },
-      }
-    );
+    // Create canvas state
+    return {
+      width: canvasWidth,
+      height: canvasHeight,
+      layers,
+    };
   };
 
   // Intercept generation attempts - show auth wall if no generations left

@@ -152,6 +152,7 @@ const ElementsPanel = ({
           className="p-4 rounded-xl border border-dashed border-border hover:border-violet-500/50 hover:bg-muted/50 transition-all flex flex-col items-center gap-2 cursor-pointer"
           aria-label="Add image layer"
         >
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <Image className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
           <span className="text-sm">Add Image</span>
         </button>

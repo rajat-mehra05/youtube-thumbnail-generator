@@ -52,14 +52,22 @@ export const getGuestSessionFromServer = async (sessionId: string) => {
 
 /**
  * Transfer guest session data to a new user account
+ * @param sessionId - The guest session ID to transfer
+ * @param userId - The user ID to transfer the data to
+ * @param canvasState - Optional canvas state to set atomically during project creation
+ * @param projectName - Optional project name (defaults to 'My First Thumbnail')
+ * @param videoTitle - Optional video title (defaults to empty string)
  */
 export const transferGuestDataToUser = async (
   sessionId: string,
-  userId: string
+  userId: string,
+  canvasState?: import('@/types').CanvasState | null,
+  projectName?: string,
+  videoTitle?: string
 ) => {
   const supabase = await createAdminClient();
 
-  // Get the guest session
+  // Get the guest session from server
   const { data: guestSession, error: fetchError } = await supabase
     .from('guest_sessions')
     .select('*')
@@ -72,14 +80,17 @@ export const transferGuestDataToUser = async (
 
   // If there's an image URL, create a project for the user
   if (guestSession.image_url) {
-    // Create a new project with the generated image
+    // Create a new project with canvas state set atomically if provided
+    const finalProjectName = projectName || 'My First Thumbnail';
+    const finalVideoTitle = videoTitle || '';
+
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .insert({
         user_id: userId,
-        name: 'My First Thumbnail',
-        video_title: '',
-        canvas_state: null, // Will be populated when they edit
+        name: finalProjectName,
+        video_title: finalVideoTitle,
+        canvas_state: canvasState || null,
       })
       .select()
       .single();
