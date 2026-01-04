@@ -138,6 +138,7 @@ export default function GuestEditorPage() {
                 onOpenChange={setShowAuthWall}
                 title="Sign up to edit your thumbnail"
                 description="Create a free account to unlock full editing features, save your projects, and export your designs."
+                redirectTo="/dashboard"
             />
         </div>
     );

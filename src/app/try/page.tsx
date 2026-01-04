@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { generateImageId, generateLayerId } from '@/lib/utils/id-generator';
@@ -10,7 +10,8 @@ import { AIThumbnailGenerator } from '@/components/create/AIThumbnailGenerator';
 import { AuthWallModal } from '@/components/auth/AuthWallModal';
 import { getCanvasDimensions } from '@/lib/constants';
 import { getOrCreateGuestSession, getRemainingGenerations, hasRemainingGenerations, incrementGuestGenerations, updateGuestSessionCanvas } from '@/lib/guest-session';
-import { syncGuestSession } from '@/lib/actions/guest-session';
+import { syncGuestSession, validateGuestSession } from '@/lib/actions/guest-session';
+import { logger } from '@/lib/utils/logger';
 import type { CanvasState, ImageLayer, TextLayer, CanvasLayer } from '@/types';
 
 interface TextSuggestions {
@@ -22,11 +23,40 @@ export default function TryPage() {
   const router = useRouter();
   const [generationsRemaining, setGenerationsRemaining] = useState(() => getRemainingGenerations());
   const [showAuthWall, setShowAuthWall] = useState(false);
+  const [validatingSession, setValidatingSession] = useState(true);
 
   const sessionId = useMemo(() => {
     const session = getOrCreateGuestSession();
     return session.sessionId;
   }, []);
+
+  // Validate session against server on mount to ensure accurate generation count
+  useEffect(() => {
+    const validateSession = async () => {
+      if (!sessionId) {
+        setValidatingSession(false);
+        return;
+      }
+
+      try {
+        const validation = await validateGuestSession(sessionId);
+        if (validation.valid && validation.generationsRemaining > 0) {
+          // Update local state to match server
+          setGenerationsRemaining(validation.generationsRemaining);
+        } else {
+          // Server says no generations left, update local state
+          setGenerationsRemaining(0);
+        }
+      } catch (error) {
+        // If validation fails, allow client-side check to proceed
+        logger.error('Session validation error:', { error });
+      } finally {
+        setValidatingSession(false);
+      }
+    };
+
+    validateSession();
+  }, [sessionId]);
 
   const handleThumbnailGenerated = async (
     backgroundUrl: string,
@@ -180,7 +210,13 @@ export default function TryPage() {
 
   // Intercept generation attempts - show auth wall if no generations left
   const handleBeforeGenerate = (): boolean => {
-    if (!hasRemainingGenerations()) {
+    // If still validating, allow generation to proceed (will be validated server-side)
+    if (validatingSession) {
+      return true;
+    }
+
+    // Check both client-side and server-validated state
+    if (generationsRemaining <= 0 || !hasRemainingGenerations()) {
       setShowAuthWall(true);
       return false;
     }
@@ -206,6 +242,7 @@ export default function TryPage() {
         onOpenChange={setShowAuthWall}
         title="Sign up to continue"
         description="You've used your free generation. Create an account to generate unlimited thumbnails and access the editor."
+        redirectTo="/try"
       />
     </div>
   );

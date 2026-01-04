@@ -12,11 +12,14 @@ import { InlineError } from '@/components/ui/error-message';
 import { SuccessMessage } from '@/components/ui/SuccessMessage';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { GoogleButton, LoginForm, SignupForm } from '@/components/auth';
+import { validateRedirectPath, getSafeOrigin } from '@/lib/utils/validation';
 
 export function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || ROUTES.DASHBOARD;
+  const redirectParam = searchParams.get('redirect');
+  // Validate and sanitize redirect path to prevent open redirects
+  const redirectTo = validateRedirectPath(redirectParam, ROUTES.DASHBOARD);
   const defaultMode = searchParams.get('mode') || 'login';
 
   const [loading, setLoading] = useState(false);
@@ -32,10 +35,15 @@ export function LoginContent() {
     setLoading(true);
     setError(null);
     try {
+      // Get origin from window (works in both dev and prod)
+      // This will be localhost in dev, production domain in prod - always correct
+      const origin = getSafeOrigin();
+      const redirectUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
+          redirectTo: redirectUrl,
           queryParams: { access_type: 'offline', prompt: 'consent' },
         },
       });
@@ -67,11 +75,16 @@ export function LoginContent() {
     setLoading(true);
     setError(null);
     try {
+      // Get origin from window (works in both dev and prod)
+      // This will be localhost in dev, production domain in prod - always correct
+      const origin = getSafeOrigin();
+      const redirectUrl = `${origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`;
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
+          emailRedirectTo: redirectUrl,
           data: { full_name: fullName },
         },
       });
