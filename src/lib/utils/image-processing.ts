@@ -69,6 +69,7 @@ export const downloadImageAsBuffer = async (url: string): Promise<Buffer> => {
 
 /**
  * Process image for storage (download, compress, convert to data URL)
+ * Handles both regular URLs and data URLs (base64)
  */
 export const processImageForStorage = async (imageUrl: string): Promise<{
   success: boolean;
@@ -76,14 +77,30 @@ export const processImageForStorage = async (imageUrl: string): Promise<{
   error?: string;
 }> => {
   try {
-    // Download the image
-    const buffer = await downloadImageAsBuffer(imageUrl);
+    let buffer: Buffer;
+
+    // Check if it's already a data URL
+    if (imageUrl.startsWith('data:')) {
+      // Extract base64 data from data URL
+      const base64Match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!base64Match) {
+        throw new Error('Invalid data URL format');
+      }
+
+      const base64Data = base64Match[2];
+      buffer = Buffer.from(base64Data, 'base64');
+
+      logger.debug(`Processing data URL (${(buffer.length / 1024 / 1024).toFixed(2)}MB)`);
+    } else {
+      // Download the image from URL
+      buffer = await downloadImageAsBuffer(imageUrl);
+    }
 
     // Compress the image
-    const { buffer: finalBuffer, mimeType } = await compressImageBuffer(buffer);
+    const { buffer: finalBuffer, mimeType: finalMimeType } = await compressImageBuffer(buffer);
 
     // Convert to base64 data URL
-    const dataUrl = convertToBase64DataUrl(finalBuffer, mimeType);
+    const dataUrl = convertToBase64DataUrl(finalBuffer, finalMimeType);
 
     logger.debug(`Created data URL (${(dataUrl.length / 1024 / 1024).toFixed(2)}MB)`);
 

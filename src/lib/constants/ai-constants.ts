@@ -12,11 +12,10 @@ export const AI_DEFAULTS = {
     CACHE_HOURS: 168, // 7 days
 } as const;
 
-// DALL-E configuration
-export const DALLE_CONFIG = {
-    MODEL: 'dall-e-3' as const,
-    QUALITY: 'hd' as const,
-    STYLE: 'vivid' as const,
+// Gemini configuration
+export const GEMINI_CONFIG = {
+    IMAGE_MODEL: 'gemini-2.5-flash-image' as const,
+    TEXT_MODEL: 'gemini-2.5-flash' as const,
 } as const;
 
 // Default color scheme for thumbnails
