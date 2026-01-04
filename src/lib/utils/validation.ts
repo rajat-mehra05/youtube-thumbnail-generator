@@ -112,7 +112,7 @@ export const validateRedirectPath = (
     if (path.startsWith('//')) return fallback;
 
     // Reject path traversal (encoded or decoded)
-    if (path.includes('..') || path.includes('%2e')) {
+    if (path.includes('..') || path.toLowerCase().includes('%2e')) {
         return fallback;
     }
 
